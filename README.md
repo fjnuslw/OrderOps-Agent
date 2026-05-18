@@ -1,0 +1,18 @@
+# OrderOps Agent
+
+OrderOps Agent is an ecommerce after-sales operations agent demo. It is designed to show an end-to-end agent workflow that combines policy retrieval, structured order data, tool calling, workflow orchestration, evaluation, and backend service design.
+
+This repository currently contains the project specification and starter assets for Codex-driven implementation.
+
+## Project Materials
+
+- `docs/PROJECT_SPEC.md` - full product and engineering specification
+- `docs/CODEX_TASKS.md` - staged implementation tasks for Codex
+- `docs/API_CONTRACT.yaml` - initial API contract
+- `data/policies/` - versioned policy documents for RAG
+- `data/eval/eval_cases_seed.csv` - seed evaluation cases
+- `data/sql/target_schema.sql` - target database schema draft
+
+## Notes
+
+The raw Olist dataset is not included in this repository. Download it separately from Kaggle or another public mirror, place local CSV files under `data/raw/`, and document the data source before publishing derived results.

@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: OrderOps Agent API
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+  /api/chat:
+    post:
+      summary: Chat with OrderOps Agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id, user_role, message]
+              properties:
+                session_id:
+                  type: string
+                user_role:
+                  type: string
+                  enum: [customer, agent, ops_admin]
+                message:
+                  type: string
+                stream:
+                  type: boolean
+      responses:
+        "200":
+          description: Agent response
+  /api/tickets:
+    post:
+      summary: Create support ticket draft or approved ticket
+      responses:
+        "200":
+          description: Ticket result
+  /api/evals/run:
+    post:
+      summary: Run evaluation cases
+      responses:
+        "200":
+          description: Evaluation run summary
+  /api/traces/{trace_id}:
+    get:
+      summary: Get trace detail
+      parameters:
+        - in: path
+          name: trace_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trace detail
