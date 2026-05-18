@@ -39,11 +39,18 @@
 
 目标：建立最小 FastAPI 项目骨架。
 
+状态：已完成基础骨架。
+
 验收：
 - 有 `apps/api` 或等价后端目录。
 - `GET /health` 返回 `{"status": "ok"}`。
 - 有最小 pytest 测试。
 - 本地测试命令可以跑通。
+
+当前实现：
+- FastAPI 应用入口：`apps/api/src/orderops_api/main.py`
+- 健康检查路由：`apps/api/src/orderops_api/routers/health.py`
+- 健康检查测试：`tests/api/test_health.py`
 
 暂缓：
 - 不实现真实业务工具。
