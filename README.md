@@ -7,6 +7,7 @@ This repository currently contains the project specification and starter assets 
 ## Project Materials
 
 - `docs/PROJECT_SPEC.md` - full product and engineering specification
+- `docs/BUILD_PLAN.md` - practical staged build plan
 - `docs/CODEX_TASKS.md` - staged implementation tasks for Codex
 - `docs/API_CONTRACT.yaml` - initial API contract
 - `data/policies/` - versioned policy documents for RAG
