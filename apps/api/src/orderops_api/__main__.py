@@ -1,18 +1,16 @@
-import os
-
 import uvicorn
+
+from orderops_api.core.config import get_settings
 
 
 def main() -> None:
-    host = os.getenv("ORDEROPS_API_HOST", "127.0.0.1")
-    port = int(os.getenv("ORDEROPS_API_PORT", "8000"))
-    reload = os.getenv("ORDEROPS_API_RELOAD", "1") != "0"
+    settings = get_settings()
 
     uvicorn.run(
         "orderops_api.main:app",
-        host=host,
-        port=port,
-        reload=reload,
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=settings.api_reload,
     )
 
 

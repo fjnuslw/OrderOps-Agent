@@ -5,7 +5,7 @@
 ## 当前状态
 
 - 已有项目规格、任务拆分、API 契约草案、政策文档、评测种子、数据库 schema 草案和架构图。
-- 尚未有可运行的后端代码、Python 包结构、测试、Docker Compose 服务或真实 Olist 原始数据。
+- 已有最小 FastAPI 后端、测试、Docker Compose 草案和本地配置模块。
 - `data/raw/` 只保留占位文件，真实 CSV 不提交到 GitHub。
 - 当前目标不是一次性做完完整 Agent，而是按阶段建立可运行、可测试、可解释的最小系统。
 
@@ -61,10 +61,19 @@
 
 目标：建立本地依赖服务，但只保证能启动和被应用配置读取。
 
+状态：已完成配置文件和后端配置读取；当前机器命令行未检测到 Docker，容器启动仍需在安装 Docker Desktop 后验证。
+
 验收：
 - `docker-compose.yml` 能启动 PostgreSQL、Redis、Qdrant。
 - `.env.example` 记录必要环境变量。
 - 后端配置层能读取数据库、Redis、Qdrant 地址。
+
+当前实现：
+- 本地容器定义：`docker-compose.yml`
+- 环境变量模板：`.env.example`
+- 配置读取模块：`apps/api/src/orderops_api/core/config.py`
+- 配置测试：`tests/api/test_config.py`
+- 本地基础设施说明：`docs/LOCAL_INFRA.md`
 
 暂缓：
 - 不做生产级高可用。

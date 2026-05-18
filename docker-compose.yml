@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: orderops-postgres
+    environment:
+      POSTGRES_USER: ${ORDEROPS_POSTGRES_USER:-orderops}
+      POSTGRES_PASSWORD: ${ORDEROPS_POSTGRES_PASSWORD:-orderops}
+      POSTGRES_DB: ${ORDEROPS_POSTGRES_DB:-orderops}
+    ports:
+      - "${ORDEROPS_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - orderops_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: orderops-redis
+    ports:
+      - "${ORDEROPS_REDIS_PORT:-6379}:6379"
+    volumes:
+      - orderops_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.6
+    container_name: orderops-qdrant
+    ports:
+      - "${ORDEROPS_QDRANT_HTTP_PORT:-6333}:6333"
+      - "${ORDEROPS_QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - orderops_qdrant_data:/qdrant/storage
+
+volumes:
+  orderops_postgres_data:
+  orderops_redis_data:
+  orderops_qdrant_data:
