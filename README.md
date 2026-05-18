@@ -25,7 +25,8 @@ python -m pytest
 Run the API locally:
 
 ```powershell
-python -m uvicorn orderops_api.main:app --app-dir apps/api/src --reload
+conda activate orderops-agent
+python -m orderops_api
 ```
 
 Health check:
