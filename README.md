@@ -9,6 +9,7 @@ This repository currently contains the project specification and starter assets 
 - `docs/PROJECT_SPEC.md` - full product and engineering specification
 - `docs/BUILD_PLAN.md` - practical staged build plan
 - `docs/LOCAL_INFRA.md` - local PostgreSQL, Redis, and Qdrant guide
+- `docs/ETL.md` - Olist CSV import guide
 - `docs/CODEX_TASKS.md` - staged implementation tasks for Codex
 - `docs/API_CONTRACT.yaml` - initial API contract
 - `data/policies/` - versioned policy documents for RAG

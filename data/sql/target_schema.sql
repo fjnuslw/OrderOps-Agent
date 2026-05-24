@@ -38,6 +38,28 @@ CREATE TABLE IF NOT EXISTS reviews (
     review_answer_timestamp TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS products (
+    product_id TEXT PRIMARY KEY,
+    product_category_name TEXT,
+    product_weight_g NUMERIC,
+    product_length_cm NUMERIC,
+    product_height_cm NUMERIC,
+    product_width_cm NUMERIC
+);
+
+CREATE TABLE IF NOT EXISTS sellers (
+    seller_id TEXT PRIMARY KEY,
+    seller_city TEXT,
+    seller_state TEXT
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+    customer_id TEXT PRIMARY KEY,
+    customer_unique_id TEXT,
+    customer_city TEXT,
+    customer_state TEXT
+);
+
 CREATE TABLE IF NOT EXISTS support_tickets (
     ticket_id TEXT PRIMARY KEY,
     order_id TEXT,

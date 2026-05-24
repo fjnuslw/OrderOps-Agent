@@ -83,10 +83,19 @@
 
 目标：把 Olist 原始 CSV 导入 PostgreSQL，形成可查询业务数据。
 
+状态：已完成 schema bootstrap 和 ETL 导入骨架；真实导入等待 `data/raw/` 下放入 Olist CSV。
+
 验收：
 - `scripts/etl_olist.py` 能读取 `data/raw/` 下的 CSV。
 - 核心表至少包含 orders、order_items、payments、reviews、products、sellers、customers。
 - 提供 smoke check，能确认导入数量和关键字段。
+
+当前实现：
+- Schema 文件：`data/sql/target_schema.sql`
+- Schema 初始化脚本：`scripts/db_bootstrap.py`
+- Olist ETL 脚本：`scripts/etl_olist.py`
+- ETL 文件检查测试：`tests/scripts/test_etl_olist.py`
+- ETL 使用说明：`docs/ETL.md`
 
 暂缓：
 - 不追求一次覆盖所有字段。
