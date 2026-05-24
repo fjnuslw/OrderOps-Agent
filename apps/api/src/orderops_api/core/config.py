@@ -18,7 +18,7 @@ class Settings(BaseModel):
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     api_reload: bool = True
-    database_url: str = "postgresql://orderops:orderops@localhost:5432/orderops"
+    database_url: str = "postgresql://orderops:orderops@localhost:15432/orderops"
     redis_url: str = "redis://localhost:6379/0"
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "orderops_policies"
@@ -39,7 +39,7 @@ def settings_from_env(env: Mapping[str, str]) -> Settings:
         api_reload=_env_bool(env.get("ORDEROPS_API_RELOAD"), True),
         database_url=env.get(
             "ORDEROPS_DATABASE_URL",
-            "postgresql://orderops:orderops@localhost:5432/orderops",
+            "postgresql://orderops:orderops@localhost:15432/orderops",
         ),
         redis_url=env.get("ORDEROPS_REDIS_URL", "redis://localhost:6379/0"),
         qdrant_url=env.get("ORDEROPS_QDRANT_URL", "http://localhost:6333"),

@@ -9,7 +9,7 @@ def test_settings_use_local_defaults() -> None:
     assert settings.api_host == "127.0.0.1"
     assert settings.api_port == 8000
     assert settings.api_reload is True
-    assert settings.database_url == "postgresql://orderops:orderops@localhost:5432/orderops"
+    assert settings.database_url == "postgresql://orderops:orderops@localhost:15432/orderops"
     assert settings.redis_url == "redis://localhost:6379/0"
     assert settings.qdrant_url == "http://localhost:6333"
     assert settings.qdrant_collection == "orderops_policies"

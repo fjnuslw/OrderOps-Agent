@@ -61,7 +61,7 @@
 
 目标：建立本地依赖服务，但只保证能启动和被应用配置读取。
 
-状态：已完成配置文件和后端配置读取；当前机器命令行未检测到 Docker，容器启动仍需在安装 Docker Desktop 后验证。
+状态：已完成并通过本地 Docker 验证。PostgreSQL 宿主机端口使用 `15432`，避免和本机已有的 `5432` 服务冲突。
 
 验收：
 - `docker-compose.yml` 能启动 PostgreSQL、Redis、Qdrant。

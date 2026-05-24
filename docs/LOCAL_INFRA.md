@@ -6,9 +6,11 @@ Phase 2 introduces local services that the API will use in later phases. These s
 
 | Service | Local URL | Purpose |
 | --- | --- | --- |
-| PostgreSQL | `localhost:5432` | Structured data: orders, tickets, evaluation results |
+| PostgreSQL | `localhost:15432` | Structured data: orders, tickets, evaluation results |
 | Redis | `localhost:6379` | Cache, session state, lightweight background task state |
 | Qdrant | `http://localhost:6333` | Vector database for policy document retrieval |
+
+PostgreSQL uses host port `15432` because `5432` is commonly already occupied by another local database.
 
 ## Files
 
@@ -29,6 +31,14 @@ Check status:
 
 ```powershell
 docker compose ps
+```
+
+Basic checks:
+
+```powershell
+docker exec orderops-postgres pg_isready -U orderops -d orderops
+docker exec orderops-redis redis-cli ping
+Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:6333/readyz'
 ```
 
 Stop services:
