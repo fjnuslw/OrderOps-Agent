@@ -2,14 +2,14 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from orderops_api.core.config import get_settings
-from orderops_api.rag.embedding import HashingEmbeddingProvider
+from orderops_api.rag.embedding import build_embedding_provider
 from orderops_api.rag.policies import load_policy_chunks
 from orderops_api.rag.qdrant import QdrantHttpClient
 
 
 def index_policies(policy_dir: Path) -> int:
     settings = get_settings()
-    embedding_provider = HashingEmbeddingProvider()
+    embedding_provider = build_embedding_provider(settings)
     chunks = load_policy_chunks(policy_dir)
     client = QdrantHttpClient(settings.qdrant_url, settings.qdrant_collection)
     client.recreate_collection(embedding_provider.dimension)

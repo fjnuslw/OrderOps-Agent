@@ -8,43 +8,102 @@ Implemented:
 
 - Markdown policy loading with frontmatter metadata.
 - Section-based chunking.
-- Deterministic local embedding provider.
+- Configurable embedding provider abstraction.
 - Qdrant collection creation and point upsert.
 - `search_policy` retrieval with doc_id, section_id, score, text, source path, and risk level.
-- Lightweight lexical reranking.
+- Configurable rerank provider abstraction.
 
 Not implemented yet:
 
-- Real semantic embedding model.
-- Real neural reranker model.
 - Agent tool integration.
+- Hybrid lexical + vector retrieval.
 
 ## Current Retrieval Stack
 
 ```text
 policy markdown
 -> section chunks
--> HashingEmbeddingProvider
+-> embedding provider
 -> Qdrant
 -> vector search
--> LexicalReranker
+-> optional rerank provider
 -> top-k policy chunks
 ```
 
-`HashingEmbeddingProvider` is intentionally small and deterministic. It is useful for building the pipeline without downloading model weights, but it is not a real semantic embedding model.
+The default `HashingEmbeddingProvider` is intentionally small and deterministic. It is useful for building and testing the pipeline without downloading model weights, but it is not a real semantic embedding model.
 
-`LexicalReranker` uses token overlap as a local placeholder. It is not a neural rerank model.
+The default `LexicalReranker` uses token overlap as a local placeholder. It is not a neural rerank model.
 
-## Future Model Upgrade
+## Provider Options
 
-Recommended local model path:
+### Default Local Development
 
 ```text
-embedding: BAAI/bge-m3
-rerank: BAAI/bge-reranker-v2-m3
+ORDEROPS_EMBEDDING_PROVIDER=hashing
+ORDEROPS_EMBEDDING_MODEL=hashing-token-v1
+ORDEROPS_EMBEDDING_DIMENSION=384
+ORDEROPS_RERANK_PROVIDER=lexical
+ORDEROPS_RERANK_MODEL=lexical-token-overlap-v1
 ```
 
-The code is structured around provider interfaces so the local hashing provider can later be replaced without rewriting the indexing/search flow.
+This requires no model download and is the safest path for tests and CI-like local checks.
+
+### Local e5 / BGE Models
+
+Install optional local RAG dependencies:
+
+```powershell
+python -m pip install -e "apps/api[test,local-rag]"
+```
+
+Example multilingual e5-style config:
+
+```text
+ORDEROPS_EMBEDDING_PROVIDER=sentence_transformers
+ORDEROPS_EMBEDDING_MODEL=intfloat/multilingual-e5-base
+ORDEROPS_EMBEDDING_QUERY_PREFIX=query: 
+ORDEROPS_EMBEDDING_DOCUMENT_PREFIX=passage: 
+ORDEROPS_RERANK_PROVIDER=cross_encoder
+ORDEROPS_RERANK_MODEL=BAAI/bge-reranker-v2-m3
+```
+
+Example BGE embedding config:
+
+```text
+ORDEROPS_EMBEDDING_PROVIDER=sentence_transformers
+ORDEROPS_EMBEDDING_MODEL=BAAI/bge-m3
+ORDEROPS_EMBEDDING_QUERY_PREFIX=
+ORDEROPS_EMBEDDING_DOCUMENT_PREFIX=
+ORDEROPS_RERANK_PROVIDER=cross_encoder
+ORDEROPS_RERANK_MODEL=BAAI/bge-reranker-v2-m3
+```
+
+After changing embedding model or dimension, re-run indexing because Qdrant collection vectors must match the active embedding provider.
+
+### OpenAI-Compatible Embedding API
+
+```text
+ORDEROPS_EMBEDDING_PROVIDER=openai_compatible
+ORDEROPS_EMBEDDING_MODEL=text-embedding-3-small
+ORDEROPS_EMBEDDING_DIMENSION=1536
+ORDEROPS_EMBEDDING_API_BASE_URL=https://api.example.com
+ORDEROPS_EMBEDDING_API_KEY=...
+ORDEROPS_EMBEDDING_API_PATH=/v1/embeddings
+```
+
+Any service exposing an OpenAI-compatible `/v1/embeddings` response shape can be used.
+
+### HTTP Rerank API
+
+```text
+ORDEROPS_RERANK_PROVIDER=http
+ORDEROPS_RERANK_MODEL=bge-reranker
+ORDEROPS_RERANK_API_BASE_URL=https://rerank.example.com
+ORDEROPS_RERANK_API_KEY=...
+ORDEROPS_RERANK_API_PATH=/rerank
+```
+
+The HTTP reranker expects a Cohere/Jina-style response containing item indices and scores, for example `results[].index` and `results[].relevance_score`.
 
 ## Index Policies
 

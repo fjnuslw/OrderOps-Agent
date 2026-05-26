@@ -22,6 +22,19 @@ class Settings(BaseModel):
     redis_url: str = "redis://localhost:6379/0"
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "orderops_policies"
+    embedding_provider: str = "hashing"
+    embedding_model: str = "hashing-token-v1"
+    embedding_dimension: int = 384
+    embedding_api_base_url: str = ""
+    embedding_api_key: str = ""
+    embedding_api_path: str = "/v1/embeddings"
+    embedding_query_prefix: str = ""
+    embedding_document_prefix: str = ""
+    rerank_provider: str = "lexical"
+    rerank_model: str = "lexical-token-overlap-v1"
+    rerank_api_base_url: str = ""
+    rerank_api_key: str = ""
+    rerank_api_path: str = "/rerank"
 
 
 def _env_bool(value: str | None, default: bool) -> bool:
@@ -47,6 +60,19 @@ def settings_from_env(env: Mapping[str, str]) -> Settings:
             "ORDEROPS_QDRANT_COLLECTION",
             "orderops_policies",
         ),
+        embedding_provider=env.get("ORDEROPS_EMBEDDING_PROVIDER", "hashing"),
+        embedding_model=env.get("ORDEROPS_EMBEDDING_MODEL", "hashing-token-v1"),
+        embedding_dimension=int(env.get("ORDEROPS_EMBEDDING_DIMENSION", "384")),
+        embedding_api_base_url=env.get("ORDEROPS_EMBEDDING_API_BASE_URL", ""),
+        embedding_api_key=env.get("ORDEROPS_EMBEDDING_API_KEY", ""),
+        embedding_api_path=env.get("ORDEROPS_EMBEDDING_API_PATH", "/v1/embeddings"),
+        embedding_query_prefix=env.get("ORDEROPS_EMBEDDING_QUERY_PREFIX", ""),
+        embedding_document_prefix=env.get("ORDEROPS_EMBEDDING_DOCUMENT_PREFIX", ""),
+        rerank_provider=env.get("ORDEROPS_RERANK_PROVIDER", "lexical"),
+        rerank_model=env.get("ORDEROPS_RERANK_MODEL", "lexical-token-overlap-v1"),
+        rerank_api_base_url=env.get("ORDEROPS_RERANK_API_BASE_URL", ""),
+        rerank_api_key=env.get("ORDEROPS_RERANK_API_KEY", ""),
+        rerank_api_path=env.get("ORDEROPS_RERANK_API_PATH", "/rerank"),
     )
 
 

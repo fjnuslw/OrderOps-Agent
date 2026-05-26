@@ -39,7 +39,7 @@ class QdrantHttpClient:
             points.append(
                 {
                     "id": str(uuid5(NAMESPACE_URL, chunk.chunk_id)),
-                    "vector": embedding_provider.embed(chunk.text),
+                    "vector": embedding_provider.embed_text(chunk.text, input_type="document"),
                     "payload": asdict(chunk),
                 }
             )

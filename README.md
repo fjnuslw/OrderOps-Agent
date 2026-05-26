@@ -93,6 +93,8 @@ python scripts/index_policies.py
 python scripts/search_policy.py "延迟送达如何补偿" --top-k 5
 ```
 
+RAG defaults to a deterministic local embedding provider and lexical reranker for reproducible development. See `docs/POLICY_RAG.md` for local e5/BGE and API-compatible embedding/rerank configuration.
+
 ## Notes
 
 The raw Olist dataset is intentionally ignored by Git through `data/raw/*`. Keep downloaded CSV files local and cite the Kaggle source when publishing derived analysis or results.
