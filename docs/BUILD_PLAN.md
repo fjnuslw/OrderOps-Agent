@@ -9,6 +9,7 @@
 - 已导入 Olist 核心订单数据到 PostgreSQL。
 - 已生成派生售后工单数据。
 - 已完成政策 RAG 第一版，并在本机切换到真实本地模型：`D:\models\bge-m3` embedding 与 `D:\models\bge-reranker-v2-m3` rerank。
+- 已开始 Phase 6：实现订单摘要、政策检索、延迟赔付判断三个受控工具接口，并记录 `tool_call_logs`。
 - `data/raw/` 只保留占位文件，真实 CSV 不提交到 GitHub。
 
 ## 总体目标
@@ -178,7 +179,7 @@
 
 ### Phase 6: Business Tools
 
-状态：下一阶段。
+状态：进行中，已完成第一条可运行工具链。
 
 目标：把关键业务动作变成受控工具。
 
@@ -188,9 +189,21 @@
 - `create_support_ticket` 默认只生成草稿，并标记 `approval_required`。
 - SQL 工具只允许 SELECT，并有基础拦截测试。
 
+当前实现：
+
+- 订单摘要工具：`apps/api/src/orderops_api/tools/order_tools.py`
+- 政策检索工具包装：`apps/api/src/orderops_api/tools/policy_tools.py`
+- 延迟赔付判断工具：`apps/api/src/orderops_api/tools/delivery_tools.py`
+- SQL Guard 基础规则：`apps/api/src/orderops_api/tools/sql_guard.py`
+- 工具调用日志：`apps/api/src/orderops_api/tools/logging.py`
+- 工具 API 路由：`apps/api/src/orderops_api/routers/tools.py`
+- 工具说明文档：`docs/BUSINESS_TOOLS.md`
+- 本地 smoke check：订单 `1b3190b2dfa9d789e1f14c05b647a14a` 返回 `eligible_with_manual_approval`，引用 `delivery_sla_policy_v1#s2`。
+
 暂缓：
 
-- 不允许工具直接执行危险写操作。
+- 暂不实现真实工单写入，下一步先做 `create_support_ticket` 草稿和审批记录。
+- 暂不暴露 SQL 分析执行接口，只保留 SQL Guard 规则。
 - 不做全功能客服后台。
 
 ### Phase 7: LangGraph Workflow
@@ -229,4 +242,4 @@
 
 ## 当前下一步
 
-进入 Phase 6：先实现只读业务查询工具和政策检索工具的统一接口，再做退款/赔付判断与工单草稿。每个工具都必须有清晰输入输出 schema、基础测试和人工审批边界。
+继续 Phase 6：补 `create_support_ticket` 草稿工具和 approvals 记录，再实现只读 SQL 分析工具的受控执行。每个写意图都必须默认进入人工审批。

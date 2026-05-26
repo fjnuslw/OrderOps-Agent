@@ -12,6 +12,7 @@ This repository is being built phase by phase as a runnable learning project, no
 - `docs/ETL.md` - Olist CSV import guide
 - `docs/SUPPORT_TICKETS.md` - derived support ticket generation guide
 - `docs/POLICY_RAG.md` - policy document indexing and search guide
+- `docs/BUSINESS_TOOLS.md` - controlled business tool guide
 - `docs/CODEX_TASKS.md` - staged implementation tasks for Codex
 - `docs/API_CONTRACT.yaml` - initial API contract
 - `data/policies/` - versioned policy documents for RAG
@@ -110,6 +111,18 @@ python scripts/search_policy.py "延迟送达如何补偿" --top-k 5
 ```
 
 `HashingEmbeddingProvider` and `LexicalReranker` are kept only for fast tests and no-model fallback checks. See `docs/POLICY_RAG.md` for local model and API-compatible embedding/rerank configuration.
+
+## Business Tools
+
+Phase 6 exposes the first controlled tool APIs:
+
+```powershell
+POST http://127.0.0.1:8000/api/tools/order-summary
+POST http://127.0.0.1:8000/api/tools/policy-search
+POST http://127.0.0.1:8000/api/tools/delivery-compensation
+```
+
+See `docs/BUSINESS_TOOLS.md` for request examples and current decision rules.
 
 ## Notes
 
