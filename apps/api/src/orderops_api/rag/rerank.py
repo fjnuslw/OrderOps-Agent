@@ -20,10 +20,7 @@ class NoopReranker:
 
 
 class LexicalReranker:
-    """Tiny local reranker based on token overlap.
-
-    This is a placeholder for a real rerank model such as bge-reranker-v2-m3.
-    """
+    """Tiny token-overlap reranker for tests and fallback runs."""
 
     def rerank(self, query: str, results: list[Any]) -> list[Any]:
         query_tokens = set(tokenize_for_embedding(query))

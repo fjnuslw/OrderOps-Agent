@@ -23,32 +23,22 @@ Not implemented yet:
 ```text
 policy markdown
 -> section chunks
--> embedding provider
+-> bge-m3 embedding provider
 -> Qdrant
 -> vector search
--> optional rerank provider
+-> bge-reranker-v2-m3 cross-encoder rerank
 -> top-k policy chunks
 ```
 
-The default `HashingEmbeddingProvider` is intentionally small and deterministic. It is useful for building and testing the pipeline without downloading model weights, but it is not a real semantic embedding model.
+The real local stack for this project is:
 
-The default `LexicalReranker` uses token overlap as a local placeholder. It is not a neural rerank model.
+- embedding: `BAAI/bge-m3`
+- rerank: `BAAI/bge-reranker-v2-m3`
+- vector store: Qdrant collection `orderops_policies`
 
-## Provider Options
+`HashingEmbeddingProvider` and `LexicalReranker` remain in the codebase only for fast unit tests and no-model fallback checks. They are not the intended policy RAG runtime.
 
-### Default Local Development
-
-```text
-ORDEROPS_EMBEDDING_PROVIDER=hashing
-ORDEROPS_EMBEDDING_MODEL=hashing-token-v1
-ORDEROPS_EMBEDDING_DIMENSION=384
-ORDEROPS_RERANK_PROVIDER=lexical
-ORDEROPS_RERANK_MODEL=lexical-token-overlap-v1
-```
-
-This requires no model download and is the safest path for tests and CI-like local checks.
-
-### Local e5 / BGE Models
+## Local BGE Models
 
 Install optional local RAG dependencies:
 
@@ -56,29 +46,34 @@ Install optional local RAG dependencies:
 python -m pip install -e "apps/api[test,local-rag]"
 ```
 
-Example multilingual e5-style config:
+The current machine keeps model weights outside Git under `D:\models`:
 
 ```text
 ORDEROPS_EMBEDDING_PROVIDER=sentence_transformers
-ORDEROPS_EMBEDDING_MODEL=intfloat/multilingual-e5-base
-ORDEROPS_EMBEDDING_QUERY_PREFIX=query: 
-ORDEROPS_EMBEDDING_DOCUMENT_PREFIX=passage: 
-ORDEROPS_RERANK_PROVIDER=cross_encoder
-ORDEROPS_RERANK_MODEL=BAAI/bge-reranker-v2-m3
-```
-
-Example BGE embedding config:
-
-```text
-ORDEROPS_EMBEDDING_PROVIDER=sentence_transformers
-ORDEROPS_EMBEDDING_MODEL=BAAI/bge-m3
+ORDEROPS_EMBEDDING_MODEL=D:\models\bge-m3
+ORDEROPS_EMBEDDING_DIMENSION=1024
 ORDEROPS_EMBEDDING_QUERY_PREFIX=
 ORDEROPS_EMBEDDING_DOCUMENT_PREFIX=
 ORDEROPS_RERANK_PROVIDER=cross_encoder
-ORDEROPS_RERANK_MODEL=BAAI/bge-reranker-v2-m3
+ORDEROPS_RERANK_MODEL=D:\models\bge-reranker-v2-m3
 ```
 
+The public `.env.example` uses HuggingFace model ids instead of local absolute paths. The private `.env` can point to local model directories to keep the runtime offline and reproducible on this machine.
+
 After changing embedding model or dimension, re-run indexing because Qdrant collection vectors must match the active embedding provider.
+
+## Download Models
+
+If the model directories are missing, download them from HuggingFace into `D:\models`:
+
+```powershell
+python scripts/download_hf_snapshot.py BAAI/bge-m3 D:\models\bge-m3 --ignore "imgs/*" --ignore "onnx/*" --ignore "*.jpg" --ignore "*.webp"
+python scripts/download_hf_snapshot.py BAAI/bge-reranker-v2-m3 D:\models\bge-reranker-v2-m3 --ignore "assets/*" --ignore "images/*"
+```
+
+The script downloads the model repository files with resume support and skips large non-runtime assets when ignore patterns are provided.
+
+## Provider Options
 
 ### OpenAI-Compatible Embedding API
 
@@ -132,12 +127,12 @@ indexed_policy_chunks: 18
 python scripts/search_policy.py "延迟送达如何补偿" --top-k 5
 ```
 
-Latest local smoke check top result:
+Latest local smoke check used `D:\models\bge-m3` plus `D:\models\bge-reranker-v2-m3`.
+
+Top result:
 
 ```text
-delivery_sla_policy_v1
-delivery_sla_policy_v1#s2
-2. 延迟送达判断
+0.9325 delivery_sla_policy_v1 delivery_sla_policy_v1#s2 2. 延迟送达判断
 ```
 
 The retrieved text includes the rule that delivery later than the estimated date by more than 2 natural days can enter delayed compensation review.

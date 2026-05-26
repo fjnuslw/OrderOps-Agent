@@ -2,7 +2,7 @@
 
 OrderOps Agent is an ecommerce after-sales operations agent demo. It is designed to show an end-to-end agent workflow that combines policy retrieval, structured order data, tool calling, workflow orchestration, evaluation, and backend service design.
 
-This repository currently contains the project specification and starter assets for Codex-driven implementation.
+This repository is being built phase by phase as a runnable learning project, not just a specification folder.
 
 ## Project Materials
 
@@ -86,6 +86,22 @@ Generate derived support tickets:
 python scripts/generate_support_tickets.py --replace
 ```
 
+## Policy RAG
+
+The real local RAG path uses `bge-m3` for embedding and `bge-reranker-v2-m3` for reranking. On this machine the private `.env` points to:
+
+```text
+D:\models\bge-m3
+D:\models\bge-reranker-v2-m3
+```
+
+Download missing model files:
+
+```powershell
+python scripts/download_hf_snapshot.py BAAI/bge-m3 D:\models\bge-m3 --ignore "imgs/*" --ignore "onnx/*" --ignore "*.jpg" --ignore "*.webp"
+python scripts/download_hf_snapshot.py BAAI/bge-reranker-v2-m3 D:\models\bge-reranker-v2-m3 --ignore "assets/*" --ignore "images/*"
+```
+
 Index and search policy documents:
 
 ```powershell
@@ -93,7 +109,7 @@ python scripts/index_policies.py
 python scripts/search_policy.py "延迟送达如何补偿" --top-k 5
 ```
 
-RAG defaults to a deterministic local embedding provider and lexical reranker for reproducible development. See `docs/POLICY_RAG.md` for local e5/BGE and API-compatible embedding/rerank configuration.
+`HashingEmbeddingProvider` and `LexicalReranker` are kept only for fast tests and no-model fallback checks. See `docs/POLICY_RAG.md` for local model and API-compatible embedding/rerank configuration.
 
 ## Notes
 

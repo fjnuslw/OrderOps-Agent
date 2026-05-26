@@ -25,10 +25,10 @@ class EmbeddingProvider(Protocol):
 
 
 class HashingEmbeddingProvider:
-    """Small deterministic embedding provider for local development.
+    """Small deterministic embedding provider for tests and fallback runs.
 
-    This is not a semantic model. It gives us a stable vector interface without
-    downloading model weights, so the RAG pipeline can be built and tested first.
+    This is not a semantic model. Real local RAG should use
+    SentenceTransformersEmbeddingProvider or an embedding API.
     """
 
     def __init__(self, dimension: int = 384) -> None:
@@ -66,7 +66,10 @@ class SentenceTransformersEmbeddingProvider:
         self.query_prefix = query_prefix
         self.document_prefix = document_prefix
         self._model = SentenceTransformer(model_name)
-        self.dimension = int(self._model.get_sentence_embedding_dimension())
+        if hasattr(self._model, "get_embedding_dimension"):
+            self.dimension = int(self._model.get_embedding_dimension())
+        else:
+            self.dimension = int(self._model.get_sentence_embedding_dimension())
 
     def embed_text(self, text: str, input_type: EmbeddingInputType = "document") -> list[float]:
         prefix = self.query_prefix if input_type == "query" else self.document_prefix
