@@ -11,6 +11,7 @@ This repository currently contains the project specification and starter assets 
 - `docs/LOCAL_INFRA.md` - local PostgreSQL, Redis, and Qdrant guide
 - `docs/ETL.md` - Olist CSV import guide
 - `docs/SUPPORT_TICKETS.md` - derived support ticket generation guide
+- `docs/POLICY_RAG.md` - policy document indexing and search guide
 - `docs/CODEX_TASKS.md` - staged implementation tasks for Codex
 - `docs/API_CONTRACT.yaml` - initial API contract
 - `data/policies/` - versioned policy documents for RAG
@@ -83,6 +84,13 @@ Generate derived support tickets:
 
 ```powershell
 python scripts/generate_support_tickets.py --replace
+```
+
+Index and search policy documents:
+
+```powershell
+python scripts/index_policies.py
+python scripts/search_policy.py "延迟送达如何补偿" --top-k 5
 ```
 
 ## Notes

@@ -126,14 +126,26 @@
 
 目标：先做小而稳的政策检索。
 
+状态：已完成第一版政策 RAG。当前使用本地 deterministic hashing embedding 和 lexical rerank 占位，尚未接入真实 embedding/rerank 模型。
+
 验收：
 - 能加载 `data/policies/` 文档。
 - 能切分、索引、查询政策片段。
 - 查询“延迟送达如何补偿”能召回 `delivery_sla_policy_v1` 相关内容。
 - 返回 doc_id、section_id、score、text。
 
+当前实现：
+- 政策加载与切分：`apps/api/src/orderops_api/rag/policies.py`
+- 本地 embedding provider：`apps/api/src/orderops_api/rag/embedding.py`
+- Qdrant HTTP 客户端：`apps/api/src/orderops_api/rag/qdrant.py`
+- 检索与 rerank：`apps/api/src/orderops_api/rag/search.py`、`apps/api/src/orderops_api/rag/rerank.py`
+- 索引脚本：`scripts/index_policies.py`
+- 检索脚本：`scripts/search_policy.py`
+- RAG 说明文档：`docs/POLICY_RAG.md`
+- 本地 smoke check：`延迟送达如何补偿` 首条召回 `delivery_sla_policy_v1#s2`。
+
 暂缓：
-- 不一开始做复杂混合召回和 rerank。
+- 不一开始做复杂混合召回或神经 rerank 模型。
 - 不依赖线上向量服务作为唯一方案。
 
 ### Phase 6: Business Tools
