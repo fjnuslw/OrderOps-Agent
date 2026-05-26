@@ -45,6 +45,39 @@ docker compose up -d
 
 See `docs/LOCAL_INFRA.md` for the service list and configuration flow.
 
+## Dataset
+
+This project uses the [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce), a public anonymized ecommerce dataset with about 100k Brazilian marketplace orders from 2016 to 2018.
+
+License: [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+Raw CSV files are not committed to this repository. Download them locally into `data/raw/`:
+
+```powershell
+Invoke-WebRequest -Uri 'https://www.kaggle.com/api/v1/datasets/download/olistbr/brazilian-ecommerce' -OutFile 'data/raw/brazilian-ecommerce.zip'
+Expand-Archive 'data/raw/brazilian-ecommerce.zip' -DestinationPath 'data/raw' -Force
+```
+
+The current ETL path imports these core files:
+
+```text
+olist_orders_dataset.csv
+olist_order_items_dataset.csv
+olist_order_payments_dataset.csv
+olist_order_reviews_dataset.csv
+olist_products_dataset.csv
+olist_sellers_dataset.csv
+olist_customers_dataset.csv
+```
+
+Load the local PostgreSQL schema and import data:
+
+```powershell
+conda activate orderops-agent
+python scripts/db_bootstrap.py
+python scripts/etl_olist.py --replace
+```
+
 ## Notes
 
-The raw Olist dataset is not included in this repository. Download it separately from Kaggle or another public mirror, place local CSV files under `data/raw/`, and document the data source before publishing derived results.
+The raw Olist dataset is intentionally ignored by Git through `data/raw/*`. Keep downloaded CSV files local and cite the Kaggle source when publishing derived analysis or results.

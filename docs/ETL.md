@@ -7,6 +7,7 @@ Phase 3 imports the Olist CSV dataset into local PostgreSQL.
 - Database schema bootstrap is implemented.
 - CSV file validation is implemented.
 - COPY-based import logic is implemented for the core Olist tables.
+- The selected core tables preserve the original CSV columns used by this import path.
 - The repository does not include raw Olist CSV files.
 
 ## Required CSV Files
@@ -24,6 +25,21 @@ olist_customers_dataset.csv
 ```
 
 The larger geolocation and category translation files are intentionally deferred until the core import path is stable.
+
+## Download Dataset
+
+Canonical source: [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce).
+
+License: [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+PowerShell download:
+
+```powershell
+Invoke-WebRequest -Uri 'https://www.kaggle.com/api/v1/datasets/download/olistbr/brazilian-ecommerce' -OutFile 'data/raw/brazilian-ecommerce.zip'
+Expand-Archive 'data/raw/brazilian-ecommerce.zip' -DestinationPath 'data/raw' -Force
+```
+
+The downloaded files stay local because `data/raw/*` is ignored by Git.
 
 ## Bootstrap Database
 
@@ -65,3 +81,15 @@ customers: ...
 ```
 
 When raw CSV files are missing, the command fails with a list of missing file paths instead of pretending the import succeeded.
+
+Latest local smoke check:
+
+```text
+orders: 99441
+order_items: 112650
+payments: 103886
+reviews: 99224
+products: 32951
+sellers: 3095
+customers: 99441
+```

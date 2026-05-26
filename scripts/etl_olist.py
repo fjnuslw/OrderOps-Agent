@@ -74,6 +74,9 @@ CSV_TABLES: tuple[CsvTableSpec, ...] = (
         columns=(
             "product_id",
             "product_category_name",
+            "product_name_lenght",
+            "product_description_lenght",
+            "product_photos_qty",
             "product_weight_g",
             "product_length_cm",
             "product_height_cm",
@@ -83,12 +86,18 @@ CSV_TABLES: tuple[CsvTableSpec, ...] = (
     CsvTableSpec(
         table_name="sellers",
         file_name="olist_sellers_dataset.csv",
-        columns=("seller_id", "seller_city", "seller_state"),
+        columns=("seller_id", "seller_zip_code_prefix", "seller_city", "seller_state"),
     ),
     CsvTableSpec(
         table_name="customers",
         file_name="olist_customers_dataset.csv",
-        columns=("customer_id", "customer_unique_id", "customer_city", "customer_state"),
+        columns=(
+            "customer_id",
+            "customer_unique_id",
+            "customer_zip_code_prefix",
+            "customer_city",
+            "customer_state",
+        ),
     ),
 )
 
@@ -109,7 +118,10 @@ def require_csv_files(raw_dir: Path) -> None:
 
 def copy_csv_table(cursor, raw_dir: Path, spec: CsvTableSpec) -> None:
     columns_sql = ", ".join(spec.columns)
-    copy_sql = f"COPY {spec.table_name} ({columns_sql}) FROM STDIN WITH (FORMAT CSV, HEADER TRUE)"
+    copy_sql = (
+        f"COPY {spec.table_name} ({columns_sql}) "
+        "FROM STDIN WITH (FORMAT CSV, HEADER TRUE, NULL '')"
+    )
     file_path = raw_dir / spec.file_name
 
     with cursor.copy(copy_sql) as copy:

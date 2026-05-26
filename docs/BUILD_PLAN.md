@@ -83,7 +83,7 @@
 
 目标：把 Olist 原始 CSV 导入 PostgreSQL，形成可查询业务数据。
 
-状态：已完成 schema bootstrap 和 ETL 导入骨架；真实导入等待 `data/raw/` 下放入 Olist CSV。
+状态：已完成 schema bootstrap、ETL 导入和本地 smoke check。原始 Olist CSV 保留在 `data/raw/`，不提交到 GitHub。
 
 验收：
 - `scripts/etl_olist.py` 能读取 `data/raw/` 下的 CSV。

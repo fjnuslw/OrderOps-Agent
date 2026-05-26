@@ -41,24 +41,37 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE TABLE IF NOT EXISTS products (
     product_id TEXT PRIMARY KEY,
     product_category_name TEXT,
+    product_name_lenght INTEGER,
+    product_description_lenght INTEGER,
+    product_photos_qty INTEGER,
     product_weight_g NUMERIC,
     product_length_cm NUMERIC,
     product_height_cm NUMERIC,
     product_width_cm NUMERIC
 );
 
+ALTER TABLE products ADD COLUMN IF NOT EXISTS product_name_lenght INTEGER;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS product_description_lenght INTEGER;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS product_photos_qty INTEGER;
+
 CREATE TABLE IF NOT EXISTS sellers (
     seller_id TEXT PRIMARY KEY,
+    seller_zip_code_prefix INTEGER,
     seller_city TEXT,
     seller_state TEXT
 );
 
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS seller_zip_code_prefix INTEGER;
+
 CREATE TABLE IF NOT EXISTS customers (
     customer_id TEXT PRIMARY KEY,
     customer_unique_id TEXT,
+    customer_zip_code_prefix INTEGER,
     customer_city TEXT,
     customer_state TEXT
 );
+
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS customer_zip_code_prefix INTEGER;
 
 CREATE TABLE IF NOT EXISTS support_tickets (
     ticket_id TEXT PRIMARY KEY,
