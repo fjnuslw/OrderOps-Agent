@@ -10,6 +10,7 @@ This repository currently contains the project specification and starter assets 
 - `docs/BUILD_PLAN.md` - practical staged build plan
 - `docs/LOCAL_INFRA.md` - local PostgreSQL, Redis, and Qdrant guide
 - `docs/ETL.md` - Olist CSV import guide
+- `docs/SUPPORT_TICKETS.md` - derived support ticket generation guide
 - `docs/CODEX_TASKS.md` - staged implementation tasks for Codex
 - `docs/API_CONTRACT.yaml` - initial API contract
 - `data/policies/` - versioned policy documents for RAG
@@ -76,6 +77,12 @@ Load the local PostgreSQL schema and import data:
 conda activate orderops-agent
 python scripts/db_bootstrap.py
 python scripts/etl_olist.py --replace
+```
+
+Generate derived support tickets:
+
+```powershell
+python scripts/generate_support_tickets.py --replace
 ```
 
 ## Notes

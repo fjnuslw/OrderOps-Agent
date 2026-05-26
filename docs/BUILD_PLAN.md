@@ -105,10 +105,18 @@
 
 目标：从订单数据派生售后工单，用于 Agent 场景和评测。
 
+状态：已完成本地生成和 smoke check。当前默认每个 scenario 生成最多 100 条工单。
+
 验收：
 - 能生成至少 100 条 support_tickets。
 - 覆盖延迟送达、低分评论、取消订单、高金额订单等 scenario。
 - 工单 schema 稳定，可被后续工具读取。
+
+当前实现：
+- 工单生成脚本：`scripts/generate_support_tickets.py`
+- 工单生成测试：`tests/scripts/test_generate_support_tickets.py`
+- 工单说明文档：`docs/SUPPORT_TICKETS.md`
+- 本地 smoke check：共 400 条，4 类 scenario 各 100 条。
 
 暂缓：
 - 不做人工标注平台。
