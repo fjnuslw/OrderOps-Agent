@@ -176,6 +176,8 @@
 - LangGraph 状态机入口：`apps/api/src/orderops_api/agent/graph.py`
 - 状态、计划、引用和 step trace schema：`apps/api/src/orderops_api/agent/state.py`
 - 输入安全和意图路由规则：`apps/api/src/orderops_api/agent/guard.py`
+- LLM 路由和最终回复 schema：`apps/api/src/orderops_api/agent/llm_planner.py`
+- DeepSeek/OpenAI-compatible LLM client：`apps/api/src/orderops_api/llm/client.py`
 - API 路由：`POST /api/agent/run`、`POST /api/chat`
 - CLI：`scripts/run_agent_case.py`
 - 文档：`docs/AGENT_WORKFLOW.md`

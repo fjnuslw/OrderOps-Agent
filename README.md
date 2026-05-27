@@ -155,6 +155,17 @@ python scripts/run_agent_case.py "订单 1b3190b2dfa9d789e1f14c05b647a14a 延迟
 
 The response includes intent, decision, approval state, citations, tool calls, a visible plan, and step trace. See `docs/AGENT_WORKFLOW.md`.
 
+Optional DeepSeek LLM routing and final answer composition can be enabled in your private `.env`:
+
+```powershell
+ORDEROPS_LLM_PROVIDER=deepseek
+ORDEROPS_LLM_API_BASE_URL=https://api.deepseek.com
+ORDEROPS_LLM_API_KEY=your_key_here
+ORDEROPS_LLM_MODEL=deepseek-v4-pro
+```
+
+When no LLM key is configured, the workflow falls back to the deterministic router and composer.
+
 ## Notes
 
 The raw Olist dataset is intentionally ignored by Git through `data/raw/*`. Keep downloaded CSV files local and cite the Kaggle source when publishing derived analysis or results.

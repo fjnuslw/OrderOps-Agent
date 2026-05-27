@@ -6,6 +6,7 @@ from time import perf_counter
 from typing import Any, Callable
 
 from langgraph.graph import END, START, StateGraph
+from pydantic import ValidationError
 
 from orderops_api.agent.guard import (
     detect_prompt_injection,
@@ -13,17 +14,25 @@ from orderops_api.agent.guard import (
     infer_intent,
     safe_ops_sql_for_message,
 )
+from orderops_api.agent.llm_planner import (
+    call_llm_final_answer,
+    call_llm_route_plan,
+    validation_error_summary,
+)
 from orderops_api.agent.state import (
     AgentRunInput,
     AgentRunOutput,
     AgentState,
     append_citation,
+    append_llm_call,
     append_step,
     append_tool_call,
     initial_state,
     output_from_state,
     set_plan,
 )
+from orderops_api.core.config import get_settings
+from orderops_api.llm.client import LLMClient, LLMUnavailable, build_llm_client
 from orderops_api.tools.analysis_tools import SellerQualityInput, analyze_seller_quality
 from orderops_api.tools.delivery_tools import DeliveryCompensationInput, check_delivery_compensation
 from orderops_api.tools.order_tools import GetOrderSummaryInput, get_order_summary
@@ -42,10 +51,23 @@ class AgentTools:
     create_support_ticket_draft: Callable[..., Any] = create_support_ticket_draft
     run_sql_analysis: Callable[..., Any] = run_sql_analysis
     analyze_seller_quality: Callable[..., Any] = analyze_seller_quality
+    llm_client: LLMClient | None = None
 
 
 def elapsed_node_ms(started_at: float) -> int:
     return int((perf_counter() - started_at) * 1000)
+
+
+def resolve_llm_client(tools: AgentTools) -> LLMClient:
+    return tools.llm_client or build_llm_client(get_settings())
+
+
+def default_policy_doc_types(intent: str | None) -> list[str]:
+    if intent == "delivery_compensation":
+        return ["delivery_sla_policy"]
+    if intent == "refund_review":
+        return ["refund_policy"]
+    return []
 
 
 def infer_refund_reason(message: str) -> str:
@@ -85,40 +107,90 @@ def input_guard_node(state: AgentState) -> AgentState:
     return state
 
 
-def intent_router_node(state: AgentState) -> AgentState:
-    started_at = perf_counter()
-    intent = infer_intent(state["message"], state["user_role"])
-    if intent in {"delivery_compensation", "refund_review"} and not state.get("order_id"):
-        state["intent"] = "missing_context"
-        append_step(
-            state,
-            "intent_router",
-            "missing_context",
-            "Order id is required for this intent.",
-            elapsed_node_ms(started_at),
-        )
-        return state
-    if intent == "seller_quality" and not state.get("seller_id"):
-        state["seller_id"] = extract_hex_id(state["message"])
-        if not state.get("seller_id"):
+def intent_router_node(tools: AgentTools) -> Callable[[AgentState], AgentState]:
+    def node(state: AgentState) -> AgentState:
+        started_at = perf_counter()
+        llm_client = resolve_llm_client(tools)
+        try:
+            route = call_llm_route_plan(llm_client, state)
+            state["llm_route"] = route.model_dump(mode="json")
+            if route.order_id:
+                state["order_id"] = route.order_id
+            if route.seller_id:
+                state["seller_id"] = route.seller_id
+            state["intent"] = route.intent
+            append_llm_call(
+                state,
+                "intent_router",
+                "success",
+                llm_client.model,
+                route.summary or f"LLM routed intent to {route.intent}.",
+            )
+            append_step(
+                state,
+                "intent_router",
+                "success" if route.intent != "missing_context" else "missing_context",
+                f"LLM routed intent to {route.intent}.",
+                elapsed_node_ms(started_at),
+            )
+            return state
+        except LLMUnavailable:
+            pass
+        except ValidationError as exc:
+            append_llm_call(
+                state,
+                "intent_router",
+                "fallback",
+                llm_client.model,
+                f"Invalid LLM route JSON: {validation_error_summary(exc)}",
+            )
+        except Exception as exc:
+            append_llm_call(
+                state,
+                "intent_router",
+                "fallback",
+                llm_client.model,
+                f"LLM route failed: {exc.__class__.__name__}",
+            )
+
+        intent = infer_intent(state["message"], state["user_role"])
+        if intent in {"delivery_compensation", "refund_review"} and not state.get("order_id"):
             state["intent"] = "missing_context"
             append_step(
                 state,
                 "intent_router",
                 "missing_context",
-                "Seller id is required for this intent.",
+                "Order id is required for this intent.",
                 elapsed_node_ms(started_at),
             )
             return state
-    state["intent"] = intent
-    append_step(state, "intent_router", "success", f"Intent routed to {intent}.", elapsed_node_ms(started_at))
-    return state
+        if intent == "seller_quality" and not state.get("seller_id"):
+            state["seller_id"] = extract_hex_id(state["message"])
+            if not state.get("seller_id"):
+                state["intent"] = "missing_context"
+                append_step(
+                    state,
+                    "intent_router",
+                    "missing_context",
+                    "Seller id is required for this intent.",
+                    elapsed_node_ms(started_at),
+                )
+                return state
+        state["intent"] = intent
+        append_step(state, "intent_router", "success", f"Intent routed to {intent}.", elapsed_node_ms(started_at))
+        return state
+
+    return node
 
 
 def query_rewrite_node(state: AgentState) -> AgentState:
     started_at = perf_counter()
     intent = state.get("intent")
-    if intent == "delivery_compensation":
+    llm_route = state.get("llm_route") or {}
+    if llm_route.get("rewritten_query"):
+        state["rewritten_query"] = llm_route["rewritten_query"]
+        state["policy_doc_types"] = llm_route.get("policy_doc_types") or default_policy_doc_types(intent)
+    elif intent == "delivery_compensation":
         state["policy_doc_types"] = ["delivery_sla_policy"]
         state["rewritten_query"] = f"delivery delay compensation policy for order {state.get('order_id')}"
     elif intent == "refund_review":
@@ -143,7 +215,13 @@ def query_rewrite_node(state: AgentState) -> AgentState:
 def plan_builder_node(state: AgentState) -> AgentState:
     started_at = perf_counter()
     intent = state.get("intent")
-    if intent == "delivery_compensation":
+    llm_route = state.get("llm_route") or {}
+    if llm_route.get("plan"):
+        set_plan(
+            state,
+            [(item["tool"], item["reason"]) for item in llm_route["plan"]],
+        )
+    elif intent == "delivery_compensation":
         set_plan(
             state,
             [
@@ -393,34 +471,69 @@ def ticket_draft_node(tools: AgentTools) -> Callable[[AgentState], AgentState]:
     return node
 
 
-def final_composer_node(state: AgentState) -> AgentState:
-    started_at = perf_counter()
-    intent = state.get("intent", "missing_context")
-    citation_count = len(state.get("citations", []))
-    tool_count = len(state.get("tool_calls", []))
-    if intent == "blocked":
-        state["answer"] = "请求被安全规则拦截。该输入包含可能绕过规则、读取隐私字段或执行危险 SQL 的内容。"
-    elif intent == "missing_context":
-        state["answer"] = "缺少必要上下文。这个请求需要提供订单 ID 或卖家 ID。"
-    elif intent == "delivery_compensation":
-        state["answer"] = (
-            f"延迟送达复核完成：决策为 {state.get('decision')}，审批状态为 {state.get('approval_status')}。"
-            f"已调用 {tool_count} 个工具，返回 {citation_count} 条政策引用。"
-        )
-    elif intent == "refund_review":
-        state["answer"] = (
-            f"退款复核完成：决策为 {state.get('decision')}，审批状态为 {state.get('approval_status')}。"
-            f"已调用 {tool_count} 个工具，返回 {citation_count} 条政策引用。"
-        )
-    elif intent == "seller_quality":
-        state["answer"] = f"卖家质量分析完成：风险等级为 {state.get('risk_level')}。已调用 {tool_count} 个工具。"
-    elif intent == "ops_sql_analysis":
-        sql_result = state.get("sql_result") or {}
-        state["answer"] = f"SQL 分析完成：状态 {sql_result.get('status')}，返回 {sql_result.get('row_count', 0)} 行。"
-    else:
-        state["answer"] = f"政策检索完成，已返回 {citation_count} 条相关引用。"
-    append_step(state, "final_composer", "success", "Final auditable response composed.", elapsed_node_ms(started_at))
-    return state
+def final_composer_node(tools: AgentTools) -> Callable[[AgentState], AgentState]:
+    def node(state: AgentState) -> AgentState:
+        started_at = perf_counter()
+        intent = state.get("intent", "missing_context")
+        citation_count = len(state.get("citations", []))
+        tool_count = len(state.get("tool_calls", []))
+        if intent == "blocked":
+            state["answer"] = "请求被安全规则拦截。该输入包含可能绕过规则、读取隐私字段或执行危险 SQL 的内容。"
+        elif intent == "missing_context":
+            state["answer"] = "缺少必要上下文。这个请求需要提供订单 ID 或卖家 ID。"
+        elif intent == "delivery_compensation":
+            state["answer"] = (
+                f"延迟送达复核完成：决策为 {state.get('decision')}，审批状态为 {state.get('approval_status')}。"
+                f"已调用 {tool_count} 个工具，返回 {citation_count} 条政策引用。"
+            )
+        elif intent == "refund_review":
+            state["answer"] = (
+                f"退款复核完成：决策为 {state.get('decision')}，审批状态为 {state.get('approval_status')}。"
+                f"已调用 {tool_count} 个工具，返回 {citation_count} 条政策引用。"
+            )
+        elif intent == "seller_quality":
+            state["answer"] = f"卖家质量分析完成：风险等级为 {state.get('risk_level')}。已调用 {tool_count} 个工具。"
+        elif intent == "ops_sql_analysis":
+            sql_result = state.get("sql_result") or {}
+            state["answer"] = f"SQL 分析完成：状态 {sql_result.get('status')}，返回 {sql_result.get('row_count', 0)} 行。"
+        else:
+            state["answer"] = f"政策检索完成，已返回 {citation_count} 条相关引用。"
+
+        if intent != "blocked":
+            llm_client = resolve_llm_client(tools)
+            try:
+                final = call_llm_final_answer(llm_client, state)
+                state["answer"] = final.answer
+                append_llm_call(
+                    state,
+                    "final_composer",
+                    "success",
+                    llm_client.model,
+                    "LLM generated the final user-facing answer from audited tool results.",
+                )
+            except LLMUnavailable:
+                pass
+            except ValidationError as exc:
+                append_llm_call(
+                    state,
+                    "final_composer",
+                    "fallback",
+                    llm_client.model,
+                    f"Invalid LLM final JSON: {validation_error_summary(exc)}",
+                )
+            except Exception as exc:
+                append_llm_call(
+                    state,
+                    "final_composer",
+                    "fallback",
+                    llm_client.model,
+                    f"LLM final answer failed: {exc.__class__.__name__}",
+                )
+
+        append_step(state, "final_composer", "success", "Final auditable response composed.", elapsed_node_ms(started_at))
+        return state
+
+    return node
 
 
 def guard_route(state: AgentState) -> str:
@@ -470,7 +583,7 @@ def build_agent_graph(tools: AgentTools | None = None):
     tools = tools or AgentTools()
     graph = StateGraph(AgentState)
     graph.add_node("input_guard", input_guard_node)
-    graph.add_node("intent_router", intent_router_node)
+    graph.add_node("intent_router", intent_router_node(tools))
     graph.add_node("query_rewrite", query_rewrite_node)
     graph.add_node("plan_builder", plan_builder_node)
     graph.add_node("order_summary", order_summary_node(tools))
@@ -482,7 +595,7 @@ def build_agent_graph(tools: AgentTools | None = None):
     graph.add_node("rule_verifier", rule_verifier_node)
     graph.add_node("approval_gate", approval_gate_node)
     graph.add_node("ticket_draft", ticket_draft_node(tools))
-    graph.add_node("final_composer", final_composer_node)
+    graph.add_node("final_composer", final_composer_node(tools))
 
     graph.add_edge(START, "input_guard")
     graph.add_conditional_edges(

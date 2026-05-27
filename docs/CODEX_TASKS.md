@@ -125,10 +125,13 @@
 当前实现补充：
 
 - `apps/api/src/orderops_api/agent/guard.py`
+- `apps/api/src/orderops_api/agent/llm_planner.py`
+- `apps/api/src/orderops_api/llm/client.py`
 - `apps/api/src/orderops_api/routers/agent.py`
 - `docs/AGENT_WORKFLOW.md`
 - `tests/agent/test_graph.py`
 - `tests/agent/test_guard.py`
+- `tests/llm/test_client.py`
 
 ## Task 6: Evaluation
 

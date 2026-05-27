@@ -13,7 +13,7 @@
 | Phase 4 | Done | Derived support tickets | scenario counts, ticket tests |
 | Phase 5 | Done | Real local BGE policy RAG | Qdrant 1024-dim collection, policy search smoke |
 | Phase 6 | Done | Controlled business tools | 8 tool APIs, logs, unit and smoke tests |
-| Phase 7 | Done | LangGraph workflow | `/api/agent/run`, `/api/chat`, graph tests, guard smoke |
+| Phase 7 | Done | LLM-assisted LangGraph workflow | `/api/agent/run`, `/api/chat`, graph tests, guard smoke |
 | Phase 8 | Later | Evaluation runner and reports | not started |
 
 ## Current Health Command
@@ -115,23 +115,25 @@ All tools use Pydantic schemas and write `tool_call_logs`. Write-intent tools st
 The agent workflow is now a real LangGraph state machine with:
 
 - input guard
-- intent router
-- query rewrite
-- plan builder
+- LLM-assisted intent router with deterministic fallback
+- LLM-assisted query rewrite with deterministic fallback
+- LLM-assisted visible plan builder with deterministic fallback
 - policy retriever
 - order summary
 - delivery/refund decision paths
 - rule verifier
 - approval gate
 - draft ticket creation
-- final composer
+- LLM-assisted final composer with deterministic fallback
 
 The API exposes:
 
 - `POST /api/agent/run`
 - `POST /api/chat`
 
-The response includes intent, visible plan, citations, tool calls, approval state, and step trace with node latency.
+The response includes intent, visible plan, citations, tool calls, LLM calls, approval state, and step trace with node latency.
+
+DeepSeek can be enabled through local `.env` with `ORDEROPS_LLM_PROVIDER=deepseek`, `ORDEROPS_LLM_MODEL=deepseek-v4-pro`, and `ORDEROPS_LLM_API_KEY`. Without a key, the workflow remains runnable through deterministic fallbacks.
 
 ## Known Boundaries
 

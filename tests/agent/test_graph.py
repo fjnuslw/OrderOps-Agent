@@ -17,7 +17,7 @@ class FakeToolbox:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    def as_agent_tools(self) -> AgentTools:
+    def as_agent_tools(self, llm_client=None) -> AgentTools:
         return AgentTools(
             get_order_summary=self.get_order_summary,
             search_policy=self.search_policy,
@@ -26,6 +26,7 @@ class FakeToolbox:
             create_support_ticket_draft=self.create_support_ticket_draft,
             run_sql_analysis=self.run_sql_analysis,
             analyze_seller_quality=self.analyze_seller_quality,
+            llm_client=llm_client,
         )
 
     def get_order_summary(self, request):
@@ -118,6 +119,43 @@ class FakeToolbox:
         )
 
 
+class FakeLLMClient:
+    model = "deepseek-v4-pro"
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def chat_json(self, system_prompt, user_payload, trace_id=None):
+        if "Allowed intents" in system_prompt:
+            self.calls.append("intent_router")
+            return {
+                "intent": "delivery_compensation",
+                "order_id": user_payload["known_order_id"],
+                "seller_id": None,
+                "rewritten_query": "LLM rewritten delivery compensation query",
+                "policy_doc_types": ["delivery_sla_policy"],
+                "plan": [
+                    {
+                        "tool": "get_order_summary",
+                        "reason": "LLM needs the delivery timeline before the rule tool runs.",
+                    },
+                    {
+                        "tool": "search_policy",
+                        "reason": "LLM needs cited policy evidence.",
+                    },
+                    {
+                        "tool": "check_delivery_compensation",
+                        "reason": "The deterministic rule tool must make the decision.",
+                    },
+                ],
+                "summary": "LLM routed the vague case to delayed delivery compensation.",
+            }
+        self.calls.append("final_composer")
+        return {
+            "answer": "LLM回复：该订单满足延迟送达赔付复核条件，当前已生成待审批草稿工单。"
+        }
+
+
 def test_delivery_workflow_runs_policy_decision_and_ticket_nodes() -> None:
     toolbox = FakeToolbox()
 
@@ -202,3 +240,29 @@ def test_seller_quality_workflow_uses_seller_tool() -> None:
     assert result.intent == "seller_quality"
     assert result.risk_level == "medium"
     assert [call.tool for call in result.tool_calls] == ["seller_quality_analysis"]
+
+
+def test_llm_can_route_and_compose_without_overriding_rule_decision() -> None:
+    toolbox = FakeToolbox()
+    llm = FakeLLMClient()
+
+    result = run_agent(
+        AgentRunInput(
+            message="帮我处理一下这个订单",
+            order_id=ORDER_ID,
+            trace_id="test-llm-route",
+        ),
+        toolbox.as_agent_tools(llm_client=llm),
+    )
+
+    assert result.intent == "delivery_compensation"
+    assert result.rewritten_query == "LLM rewritten delivery compensation query"
+    assert result.decision == "eligible_with_manual_approval"
+    assert result.answer.startswith("LLM回复")
+    assert [call.node for call in result.llm_calls] == ["intent_router", "final_composer"]
+    assert [call.tool for call in result.tool_calls] == [
+        "get_order_summary",
+        "search_policy",
+        "check_delivery_compensation",
+        "create_support_ticket_draft",
+    ]

@@ -44,6 +44,13 @@ class AgentToolCall(BaseModel):
     summary: str
 
 
+class AgentLLMCall(BaseModel):
+    node: str
+    status: str
+    model: str
+    summary: str
+
+
 class AgentPlanStep(BaseModel):
     step: int
     tool: str
@@ -69,6 +76,7 @@ class AgentRunOutput(BaseModel):
     plan: list[AgentPlanStep] = Field(default_factory=list)
     citations: list[AgentCitation] = Field(default_factory=list)
     tool_calls: list[AgentToolCall] = Field(default_factory=list)
+    llm_calls: list[AgentLLMCall] = Field(default_factory=list)
     steps: list[AgentStep] = Field(default_factory=list)
     blocked_reason: str | None = None
 
@@ -90,6 +98,7 @@ class AgentState(TypedDict, total=False):
     blocked_reason: str | None
     steps: list[dict[str, Any]]
     tool_calls: list[dict[str, Any]]
+    llm_calls: list[dict[str, Any]]
     citations: list[dict[str, Any]]
     approval_required: bool
     approval_status: str
@@ -105,6 +114,7 @@ class AgentState(TypedDict, total=False):
     ticket_result: dict[str, Any] | None
     sql_result: dict[str, Any] | None
     seller_result: dict[str, Any] | None
+    llm_route: dict[str, Any] | None
 
 
 def initial_state(request: AgentRunInput) -> AgentState:
@@ -126,6 +136,7 @@ def initial_state(request: AgentRunInput) -> AgentState:
         "blocked_reason": None,
         "steps": [],
         "tool_calls": [],
+        "llm_calls": [],
         "citations": [],
         "approval_required": False,
         "approval_status": "not_required",
@@ -134,6 +145,7 @@ def initial_state(request: AgentRunInput) -> AgentState:
         "decision": None,
         "risk_level": None,
         "answer": "",
+        "llm_route": None,
     }
 
 
@@ -152,6 +164,7 @@ def output_from_state(state: AgentState) -> AgentRunOutput:
         plan=[AgentPlanStep(**item) for item in state.get("plan", [])],
         citations=[AgentCitation(**item) for item in state.get("citations", [])],
         tool_calls=[AgentToolCall(**item) for item in state.get("tool_calls", [])],
+        llm_calls=[AgentLLMCall(**item) for item in state.get("llm_calls", [])],
         steps=[AgentStep(**item) for item in state.get("steps", [])],
         blocked_reason=state.get("blocked_reason"),
     )
@@ -181,6 +194,23 @@ def append_tool_call(state: AgentState, tool: str, status: str, summary: str) ->
         {
             "tool": tool,
             "status": status,
+            "summary": summary,
+        }
+    )
+
+
+def append_llm_call(
+    state: AgentState,
+    node: str,
+    status: str,
+    model: str,
+    summary: str,
+) -> None:
+    state.setdefault("llm_calls", []).append(
+        {
+            "node": node,
+            "status": status,
+            "model": model,
             "summary": summary,
         }
     )

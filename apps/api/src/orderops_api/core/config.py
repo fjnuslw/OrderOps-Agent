@@ -35,6 +35,16 @@ class Settings(BaseModel):
     rerank_api_base_url: str = ""
     rerank_api_key: str = ""
     rerank_api_path: str = "/rerank"
+    llm_provider: str = "disabled"
+    llm_api_base_url: str = "https://api.deepseek.com"
+    llm_api_key: str = ""
+    llm_api_path: str = "/chat/completions"
+    llm_model: str = "deepseek-v4-pro"
+    llm_temperature: float = 0.0
+    llm_max_tokens: int = 1200
+    llm_timeout_seconds: int = 60
+    llm_thinking_enabled: bool = False
+    llm_reasoning_effort: str = "medium"
 
 
 def _env_bool(value: str | None, default: bool) -> bool:
@@ -73,6 +83,16 @@ def settings_from_env(env: Mapping[str, str]) -> Settings:
         rerank_api_base_url=env.get("ORDEROPS_RERANK_API_BASE_URL", ""),
         rerank_api_key=env.get("ORDEROPS_RERANK_API_KEY", ""),
         rerank_api_path=env.get("ORDEROPS_RERANK_API_PATH", "/rerank"),
+        llm_provider=env.get("ORDEROPS_LLM_PROVIDER", "disabled"),
+        llm_api_base_url=env.get("ORDEROPS_LLM_API_BASE_URL", "https://api.deepseek.com"),
+        llm_api_key=env.get("ORDEROPS_LLM_API_KEY", ""),
+        llm_api_path=env.get("ORDEROPS_LLM_API_PATH", "/chat/completions"),
+        llm_model=env.get("ORDEROPS_LLM_MODEL", "deepseek-v4-pro"),
+        llm_temperature=float(env.get("ORDEROPS_LLM_TEMPERATURE", "0")),
+        llm_max_tokens=int(env.get("ORDEROPS_LLM_MAX_TOKENS", "1200")),
+        llm_timeout_seconds=int(env.get("ORDEROPS_LLM_TIMEOUT_SECONDS", "60")),
+        llm_thinking_enabled=_env_bool(env.get("ORDEROPS_LLM_THINKING_ENABLED"), False),
+        llm_reasoning_effort=env.get("ORDEROPS_LLM_REASONING_EFFORT", "medium"),
     )
 
 

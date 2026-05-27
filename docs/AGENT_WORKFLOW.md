@@ -23,7 +23,9 @@ python scripts/run_agent_case.py "订单 1b3190b2dfa9d789e1f14c05b647a14a 延迟
 
 - `apps/api/src/orderops_api/agent/state.py` defines request, output, step trace, plan, citations, and mutable graph state.
 - `apps/api/src/orderops_api/agent/guard.py` contains deterministic guard rules, ID extraction, intent routing helpers, and approved SQL templates.
+- `apps/api/src/orderops_api/agent/llm_planner.py` contains LLM prompts and structured response schemas for routing and final answer composition.
 - `apps/api/src/orderops_api/agent/graph.py` builds the LangGraph state machine.
+- `apps/api/src/orderops_api/llm/client.py` contains the OpenAI-compatible DeepSeek client.
 - `apps/api/src/orderops_api/routers/agent.py` exposes the workflow through FastAPI.
 - `scripts/run_agent_case.py` runs one local case from the command line.
 
@@ -76,9 +78,11 @@ Routes the request into one of these intents:
 - `blocked`
 - `missing_context`
 
+If `ORDEROPS_LLM_PROVIDER=deepseek` and `ORDEROPS_LLM_API_KEY` is set, this node asks the LLM for structured routing JSON first. If the LLM is unavailable or returns invalid JSON, the node falls back to deterministic routing.
+
 `query_rewrite`
 
-Turns the raw message into a retrieval/tool query and chooses policy document families when the intent is known.
+Turns the raw message into a retrieval/tool query and chooses policy document families when the intent is known. With LLM routing enabled, this uses the LLM's rewritten query after schema validation.
 
 `plan_builder`
 
@@ -118,14 +122,39 @@ Runs only approved read-only SQL templates. It is not a free-form SQL console.
 
 `final_composer`
 
-Returns a concise answer plus structured fields: intent, decision, approval status, citations, tool calls, plan, and step trace.
+Returns a concise answer plus structured fields: intent, decision, approval status, citations, tool calls, LLM calls, plan, and step trace. With LLM enabled, it asks the LLM to write the user-facing Chinese answer from audited tool results, without changing the deterministic decision.
+
+## LLM Configuration
+
+The project uses DeepSeek through its OpenAI-compatible API shape:
+
+```powershell
+ORDEROPS_LLM_PROVIDER=deepseek
+ORDEROPS_LLM_API_BASE_URL=https://api.deepseek.com
+ORDEROPS_LLM_API_KEY=your_key_here
+ORDEROPS_LLM_MODEL=deepseek-v4-pro
+ORDEROPS_LLM_THINKING_ENABLED=0
+ORDEROPS_LLM_REASONING_EFFORT=medium
+```
+
+Do not commit the real key. Put it only in your local `.env`.
+
+LLM usage is intentionally limited:
+
+- LLM may classify intent.
+- LLM may rewrite retrieval queries.
+- LLM may propose a visible tool plan.
+- LLM may write the final answer.
+- LLM may not decide refund or compensation eligibility.
+- LLM may not bypass `input_guard`, SQL guard, or approval gate.
 
 ## Current Boundaries
 
-- The workflow is deterministic and tool-driven; no LLM planner is wired in yet.
+- The workflow remains tool-governed even when LLM routing is enabled; deterministic tools still make refund and compensation decisions.
+- LLM routing and final composition are optional and require `ORDEROPS_LLM_API_KEY`.
 - Streaming is accepted in the request schema but not implemented yet.
 - Delivery/refund decision tools still perform a small internal policy lookup for safety. Phase 7 limits that second lookup to `top_k=1`, and local embedding/rerank providers are cached inside the API process.
 - Trace details are returned in the API response, but there is not yet a separate trace storage/read endpoint.
 - Evaluation metrics are Phase 8.
 
-These boundaries are intentional for Phase 7: the graph now proves safe orchestration and auditable tool execution before we add evaluation and richer conversation behavior.
+These boundaries are intentional for Phase 7: the graph now proves safe LLM-assisted orchestration and auditable tool execution before we add evaluation and richer conversation behavior.
