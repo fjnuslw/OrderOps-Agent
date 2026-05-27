@@ -68,6 +68,7 @@ Rules:
 - If a delivery/refund request lacks an order_id, return missing_context.
 - If a seller quality request lacks a seller_id, return missing_context.
 - Plan must use only allowed tools.
+- Plan must be a JSON array of objects, each object shaped like {"tool": "...", "reason": "..."}.
 - rewritten_query should be suitable for RAG retrieval.
 """.strip()
 
@@ -93,6 +94,7 @@ def call_llm_route_plan(client: LLMClient, state: AgentState) -> LLMRoutePlan:
         "known_seller_id": state.get("seller_id"),
     }
     raw = client.chat_json(ROUTER_SYSTEM_PROMPT, payload, trace_id=state.get("trace_id"))
+    raw = normalize_route_payload(raw)
     plan = LLMRoutePlan.model_validate(raw)
     return sanitize_route_plan(plan, state)
 
@@ -149,6 +151,26 @@ def sanitize_route_plan(plan: LLMRoutePlan, state: AgentState) -> LLMRoutePlan:
             "plan": safe_steps,
         }
     )
+
+
+def normalize_route_payload(raw: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(raw)
+    plan = payload.get("plan")
+    if not isinstance(plan, list):
+        payload["plan"] = []
+        return payload
+
+    normalized_plan: list[dict[str, str]] = []
+    for item in plan:
+        if isinstance(item, str):
+            normalized_plan.append({"tool": item, "reason": "LLM selected this tool."})
+        elif isinstance(item, dict):
+            tool = str(item.get("tool") or item.get("name") or "")
+            reason = str(item.get("reason") or item.get("description") or "LLM selected this tool.")
+            if tool:
+                normalized_plan.append({"tool": tool, "reason": reason})
+    payload["plan"] = normalized_plan
+    return payload
 
 
 def compact_mapping(value: Any) -> Any:

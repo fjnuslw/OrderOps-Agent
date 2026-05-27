@@ -7,6 +7,7 @@ from orderops_api.tools.policy_tools import PolicyCitation, PolicySearchOutput
 from orderops_api.tools.refund_tools import RefundEligibilityOutput
 from orderops_api.tools.sql_tools import SqlAnalysisOutput
 from orderops_api.tools.ticket_tools import CreateSupportTicketDraftOutput
+from orderops_api.llm.client import DisabledLLMClient
 
 
 ORDER_ID = "1b3190b2dfa9d789e1f14c05b647a14a"
@@ -18,6 +19,7 @@ class FakeToolbox:
         self.calls: list[str] = []
 
     def as_agent_tools(self, llm_client=None) -> AgentTools:
+        llm_client = llm_client or DisabledLLMClient()
         return AgentTools(
             get_order_summary=self.get_order_summary,
             search_policy=self.search_policy,
@@ -156,6 +158,22 @@ class FakeLLMClient:
         }
 
 
+class LoosePlanLLMClient(FakeLLMClient):
+    def chat_json(self, system_prompt, user_payload, trace_id=None):
+        if "Allowed intents" in system_prompt:
+            self.calls.append("intent_router")
+            return {
+                "intent": "delivery_compensation",
+                "order_id": user_payload["known_order_id"],
+                "seller_id": None,
+                "rewritten_query": "LLM loose plan query",
+                "policy_doc_types": ["delivery_sla_policy"],
+                "plan": ["get_order_summary", "search_policy", "check_delivery_compensation"],
+                "summary": "LLM returned a loose plan list.",
+            }
+        return super().chat_json(system_prompt, user_payload, trace_id)
+
+
 def test_delivery_workflow_runs_policy_decision_and_ticket_nodes() -> None:
     toolbox = FakeToolbox()
 
@@ -266,3 +284,23 @@ def test_llm_can_route_and_compose_without_overriding_rule_decision() -> None:
         "check_delivery_compensation",
         "create_support_ticket_draft",
     ]
+
+
+def test_llm_route_accepts_loose_plan_items() -> None:
+    toolbox = FakeToolbox()
+    llm = LoosePlanLLMClient()
+
+    result = run_agent(
+        AgentRunInput(
+            message="帮我处理一下这个订单",
+            order_id=ORDER_ID,
+            trace_id="test-llm-loose-plan",
+            auto_create_ticket=False,
+        ),
+        toolbox.as_agent_tools(llm_client=llm),
+    )
+
+    assert result.intent == "delivery_compensation"
+    assert result.llm_calls[0].status == "success"
+    assert result.plan[0].tool == "get_order_summary"
+    assert result.plan[0].reason == "LLM selected this tool."
