@@ -86,6 +86,40 @@ Current decision rules:
 
 The tool never directly promises compensation. A positive decision has `approval_required=true`.
 
+### create_support_ticket_draft
+
+Purpose: create a support ticket draft and a pending approval record. This is the first controlled write tool in Phase 6.
+
+API:
+
+```http
+POST /api/tools/support-ticket-draft
+```
+
+Example request:
+
+```json
+{
+  "order_id": "1b3190b2dfa9d789e1f14c05b647a14a",
+  "scenario": "delivery_delay",
+  "title": "Delivery delay compensation review",
+  "description": "Order arrived more than 2 natural days after the estimated delivery date.",
+  "expected_action": "Review the policy evidence and decide whether compensation is appropriate.",
+  "priority": "high",
+  "risk_level": "high",
+  "requested_by": "agent",
+  "policy_refs": ["delivery_sla_policy_v1#s3"],
+  "trace_id": "demo-ticket-1"
+}
+```
+
+The tool writes:
+
+- one `support_tickets` row with `status=draft_pending_approval`
+- one `approvals` row with `status=pending`
+
+It does not approve the ticket and does not perform any money movement.
+
 ## SQL Guard
 
 `orderops_api.tools.sql_guard` contains the first SQL guardrail helpers for the later SQL analysis tool:
@@ -116,4 +150,5 @@ Latest smoke check:
 get_order_summary: success
 search_policy: success
 check_delivery_compensation: success
+create_support_ticket_draft: success
 ```

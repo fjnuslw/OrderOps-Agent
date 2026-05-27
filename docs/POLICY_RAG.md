@@ -38,6 +38,19 @@ The real local stack for this project is:
 
 `HashingEmbeddingProvider` and `LexicalReranker` remain in the codebase only for fast unit tests and no-model fallback checks. They are not the intended policy RAG runtime.
 
+## Dataset Boundary
+
+The current policy documents are demo policies with an explicit Olist data binding. They are not meant to represent a real ecommerce platform's full policy library.
+
+Each policy should separate two layers:
+
+- Business rule: the operational rule that could transfer to another ecommerce system.
+- Data binding: how that rule is approximated in the current Olist dataset.
+
+For example, the delivery delay rule is a business concept, but the current implementation maps it to `order_estimated_delivery_date`, `order_delivered_customer_date`, and `order_status`. A real production system would also need carrier tracking events, customer contact history, refunds, seller SLA contracts, and compensation ledger data.
+
+This separation keeps the RAG useful for the demo while making the limitation visible instead of pretending the dataset contains every production signal.
+
 ## Local BGE Models
 
 Install optional local RAG dependencies:
@@ -118,7 +131,7 @@ python scripts/index_policies.py
 Latest local result:
 
 ```text
-indexed_policy_chunks: 18
+indexed_policy_chunks: 22
 ```
 
 ## Search Policies
@@ -132,7 +145,7 @@ Latest local smoke check used `D:\models\bge-m3` plus `D:\models\bge-reranker-v2
 Top result:
 
 ```text
-0.9325 delivery_sla_policy_v1 delivery_sla_policy_v1#s2 2. 延迟送达判断
+0.9591 delivery_sla_policy_v1 delivery_sla_policy_v1#s3 3. 延迟送达判断
 ```
 
 The retrieved text includes the rule that delivery later than the estimated date by more than 2 natural days can enter delayed compensation review.

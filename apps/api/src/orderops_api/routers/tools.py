@@ -7,6 +7,11 @@ from orderops_api.tools.delivery_tools import (
 )
 from orderops_api.tools.order_tools import GetOrderSummaryInput, OrderSummaryOutput, get_order_summary
 from orderops_api.tools.policy_tools import PolicySearchInput, PolicySearchOutput, search_policy_tool
+from orderops_api.tools.ticket_tools import (
+    CreateSupportTicketDraftInput,
+    CreateSupportTicketDraftOutput,
+    create_support_ticket_draft,
+)
 
 
 router = APIRouter(prefix="/api/tools", tags=["tools"])
@@ -25,3 +30,8 @@ def policy_search(request: PolicySearchInput) -> PolicySearchOutput:
 @router.post("/delivery-compensation", response_model=DeliveryCompensationOutput)
 def delivery_compensation(request: DeliveryCompensationInput) -> DeliveryCompensationOutput:
     return check_delivery_compensation(request)
+
+
+@router.post("/support-ticket-draft", response_model=CreateSupportTicketDraftOutput)
+def support_ticket_draft(request: CreateSupportTicketDraftInput) -> CreateSupportTicketDraftOutput:
+    return create_support_ticket_draft(request)

@@ -120,6 +120,7 @@ Phase 6 exposes the first controlled tool APIs:
 POST http://127.0.0.1:8000/api/tools/order-summary
 POST http://127.0.0.1:8000/api/tools/policy-search
 POST http://127.0.0.1:8000/api/tools/delivery-compensation
+POST http://127.0.0.1:8000/api/tools/support-ticket-draft
 ```
 
 See `docs/BUSINESS_TOOLS.md` for request examples and current decision rules.
