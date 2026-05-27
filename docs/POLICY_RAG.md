@@ -12,10 +12,10 @@ Implemented:
 - Qdrant collection creation and point upsert.
 - `search_policy` retrieval with doc_id, section_id, score, text, source path, and risk level.
 - Configurable rerank provider abstraction.
+- Business tool wrapper through `POST /api/tools/policy-search`.
 
 Not implemented yet:
 
-- Agent tool integration.
 - Hybrid lexical + vector retrieval.
 
 ## Current Retrieval Stack

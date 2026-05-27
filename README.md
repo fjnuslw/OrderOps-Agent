@@ -8,6 +8,7 @@ This repository is being built phase by phase as a runnable learning project, no
 
 - `docs/PROJECT_SPEC.md` - full product and engineering specification
 - `docs/BUILD_PLAN.md` - practical staged build plan
+- `docs/PHASE_STATUS.md` - completed phase status and gap checklist
 - `docs/LOCAL_INFRA.md` - local PostgreSQL, Redis, and Qdrant guide
 - `docs/ETL.md` - Olist CSV import guide
 - `docs/SUPPORT_TICKETS.md` - derived support ticket generation guide
@@ -25,6 +26,12 @@ Run tests:
 
 ```powershell
 python -m pytest
+```
+
+Run phase smoke checks:
+
+```powershell
+python scripts/phase_smoke_check.py
 ```
 
 Run the API locally:
