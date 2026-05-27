@@ -27,11 +27,61 @@ paths:
                   enum: [customer, agent, ops_admin]
                 message:
                   type: string
+                order_id:
+                  type: string
+                  nullable: true
+                seller_id:
+                  type: string
+                  nullable: true
+                request_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                auto_create_ticket:
+                  type: boolean
                 stream:
                   type: boolean
       responses:
         "200":
           description: Agent response
+  /api/agent/run:
+    post:
+      summary: Run the auditable LangGraph workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                session_id:
+                  type: string
+                user_role:
+                  type: string
+                  enum: [customer, agent, ops_admin]
+                message:
+                  type: string
+                order_id:
+                  type: string
+                  nullable: true
+                seller_id:
+                  type: string
+                  nullable: true
+                request_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                trace_id:
+                  type: string
+                  nullable: true
+                auto_create_ticket:
+                  type: boolean
+                stream:
+                  type: boolean
+      responses:
+        "200":
+          description: Agent response with intent, plan, citations, tool calls, and step trace
   /api/tickets:
     post:
       summary: Create support ticket draft or approved ticket

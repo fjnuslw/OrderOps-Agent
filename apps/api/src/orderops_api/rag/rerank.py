@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from functools import lru_cache
 import json
 from typing import Any, Protocol
 from urllib import request
@@ -94,24 +95,43 @@ class HttpReranker:
 
 
 def build_reranker(settings: Settings, enabled: bool = True) -> Reranker:
+    return build_cached_reranker(
+        enabled=enabled,
+        provider=settings.rerank_provider,
+        model=settings.rerank_model,
+        api_base_url=settings.rerank_api_base_url,
+        api_key=settings.rerank_api_key,
+        api_path=settings.rerank_api_path,
+    )
+
+
+@lru_cache(maxsize=8)
+def build_cached_reranker(
+    enabled: bool,
+    provider: str,
+    model: str,
+    api_base_url: str,
+    api_key: str,
+    api_path: str,
+) -> Reranker:
     if not enabled:
         return NoopReranker()
 
-    provider = settings.rerank_provider.strip().lower()
+    provider = provider.strip().lower()
     if provider in {"none", "noop", "disabled"}:
         return NoopReranker()
     if provider == "lexical":
         return LexicalReranker()
     if provider == "cross_encoder":
-        return CrossEncoderReranker(settings.rerank_model)
+        return CrossEncoderReranker(model)
     if provider == "http":
         return HttpReranker(
-            base_url=settings.rerank_api_base_url,
-            api_key=settings.rerank_api_key,
-            model=settings.rerank_model,
-            api_path=settings.rerank_api_path,
+            base_url=api_base_url,
+            api_key=api_key,
+            model=model,
+            api_path=api_path,
         )
-    raise ValueError(f"Unsupported rerank provider: {settings.rerank_provider}")
+    raise ValueError(f"Unsupported rerank provider: {provider}")
 
 
 def apply_http_rerank_response(results: list[Any], response: dict[str, Any]) -> list[Any]:

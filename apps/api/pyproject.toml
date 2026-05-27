@@ -23,6 +23,9 @@ test = [
 local-rag = [
     "sentence-transformers>=3.0.0",
 ]
+agent = [
+    "langgraph>=0.2.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

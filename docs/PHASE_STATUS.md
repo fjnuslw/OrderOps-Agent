@@ -13,7 +13,7 @@
 | Phase 4 | Done | Derived support tickets | scenario counts, ticket tests |
 | Phase 5 | Done | Real local BGE policy RAG | Qdrant 1024-dim collection, policy search smoke |
 | Phase 6 | Done | Controlled business tools | 8 tool APIs, logs, unit and smoke tests |
-| Phase 7 | Next | LangGraph workflow | not started |
+| Phase 7 | Done | LangGraph workflow | `/api/agent/run`, `/api/chat`, graph tests, guard smoke |
 | Phase 8 | Later | Evaluation runner and reports | not started |
 
 ## Current Health Command
@@ -110,23 +110,47 @@ The business tool layer is now the stable action surface for Phase 7:
 
 All tools use Pydantic schemas and write `tool_call_logs`. Write-intent tools stop at drafts and approvals; no money movement is executed.
 
+### Phase 7: LangGraph Workflow
+
+The agent workflow is now a real LangGraph state machine with:
+
+- input guard
+- intent router
+- query rewrite
+- plan builder
+- policy retriever
+- order summary
+- delivery/refund decision paths
+- rule verifier
+- approval gate
+- draft ticket creation
+- final composer
+
+The API exposes:
+
+- `POST /api/agent/run`
+- `POST /api/chat`
+
+The response includes intent, visible plan, citations, tool calls, approval state, and step trace with node latency.
+
 ## Known Boundaries
 
 - The project is a local demo, not production deployment.
 - Olist lacks real logistics events, refund ledgers, customer support conversations, and compensation records.
 - Current policies are synthetic and intentionally documented as demo policies.
 - SQL analysis is read-only and guarded; it is not an admin SQL console.
-- Phase 7 has not yet introduced LangGraph orchestration.
+- Streaming is accepted in the agent request schema but not implemented yet.
+- Trace details are returned in responses, but a separate trace storage API is not implemented yet.
 - Phase 8 evaluation metrics are not implemented yet.
 
 ## Next Phase
 
-Phase 7 should connect these tools into a LangGraph workflow with:
+Phase 8 should add evaluation with:
 
-- intent routing
-- order and policy retrieval
-- business decision tools
-- draft ticket creation
-- approval waiting state
-- prompt injection guard
-- auditable step trace
+- fixed eval cases
+- retrieval recall checks
+- tool selection accuracy
+- tool argument accuracy
+- task success rate
+- risk-control accuracy
+- latency reporting

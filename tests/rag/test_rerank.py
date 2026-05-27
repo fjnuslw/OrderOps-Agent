@@ -33,9 +33,11 @@ def test_lexical_reranker_promotes_matching_policy_text() -> None:
 
 
 def test_reranker_factory_defaults_to_lexical() -> None:
-    reranker = build_reranker(settings_from_env({}))
+    settings = settings_from_env({})
+    reranker = build_reranker(settings)
 
     assert isinstance(reranker, LexicalReranker)
+    assert reranker is build_reranker(settings)
 
 
 def test_reranker_factory_can_disable_rerank() -> None:

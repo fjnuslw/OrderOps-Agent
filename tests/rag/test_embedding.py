@@ -44,6 +44,12 @@ def test_default_embedding_provider_factory_uses_hashing() -> None:
     assert provider.dimension == 384
 
 
+def test_embedding_provider_factory_reuses_same_local_provider() -> None:
+    settings = settings_from_env({})
+
+    assert build_embedding_provider(settings) is build_embedding_provider(settings)
+
+
 def test_openai_compatible_embedding_provider_factory() -> None:
     settings = settings_from_env(
         {

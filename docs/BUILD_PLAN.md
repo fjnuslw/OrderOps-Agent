@@ -160,7 +160,7 @@
 
 ### Phase 7: LangGraph Workflow
 
-状态：下一阶段。
+状态：已完成当前阶段收束。
 
 目标：把 Phase 6 工具串成可追踪状态机。
 
@@ -170,6 +170,15 @@
 - 退款案例能触发订单查询、退款政策检索、退款资格判断和审批等待。
 - Prompt Injection 案例不会调用危险 SQL 工具。
 - 每次运行能输出结构化 trace 或 step log。
+
+当前实现：
+
+- LangGraph 状态机入口：`apps/api/src/orderops_api/agent/graph.py`
+- 状态、计划、引用和 step trace schema：`apps/api/src/orderops_api/agent/state.py`
+- 输入安全和意图路由规则：`apps/api/src/orderops_api/agent/guard.py`
+- API 路由：`POST /api/agent/run`、`POST /api/chat`
+- CLI：`scripts/run_agent_case.py`
+- 文档：`docs/AGENT_WORKFLOW.md`
 
 ### Phase 8: Evaluation
 
@@ -185,4 +194,4 @@
 
 ## 当前下一步
 
-进入 Phase 7：基于 Phase 6 的受控工具实现 LangGraph workflow。先做延迟送达和退款复核两条主路径，再补 prompt injection 防护节点和可审计 trace。
+进入 Phase 8：基于 Phase 7 的稳定工作流实现评测系统。先用固定评测样本覆盖检索召回、工具选择、工具参数、任务成功率、风险控制和延迟，再输出 JSON/Markdown 报告。

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from functools import lru_cache
 from hashlib import blake2b
 import json
 from math import sqrt
@@ -125,26 +126,49 @@ class OpenAICompatibleEmbeddingProvider:
 
 
 def build_embedding_provider(settings: Settings) -> EmbeddingProvider:
-    provider = settings.embedding_provider.strip().lower()
+    return build_cached_embedding_provider(
+        provider=settings.embedding_provider,
+        model=settings.embedding_model,
+        dimension=settings.embedding_dimension,
+        api_base_url=settings.embedding_api_base_url,
+        api_key=settings.embedding_api_key,
+        api_path=settings.embedding_api_path,
+        query_prefix=settings.embedding_query_prefix,
+        document_prefix=settings.embedding_document_prefix,
+    )
+
+
+@lru_cache(maxsize=8)
+def build_cached_embedding_provider(
+    provider: str,
+    model: str,
+    dimension: int,
+    api_base_url: str,
+    api_key: str,
+    api_path: str,
+    query_prefix: str,
+    document_prefix: str,
+) -> EmbeddingProvider:
+    provider = provider.strip().lower()
     if provider == "hashing":
-        return HashingEmbeddingProvider(dimension=settings.embedding_dimension)
+        return HashingEmbeddingProvider(dimension=dimension)
     if provider == "sentence_transformers":
         return SentenceTransformersEmbeddingProvider(
-            model_name=settings.embedding_model,
-            query_prefix=settings.embedding_query_prefix,
-            document_prefix=settings.embedding_document_prefix,
+            model_name=model,
+            query_prefix=query_prefix,
+            document_prefix=document_prefix,
         )
     if provider == "openai_compatible":
         return OpenAICompatibleEmbeddingProvider(
-            base_url=settings.embedding_api_base_url,
-            api_key=settings.embedding_api_key,
-            model=settings.embedding_model,
-            dimension=settings.embedding_dimension,
-            api_path=settings.embedding_api_path,
-            query_prefix=settings.embedding_query_prefix,
-            document_prefix=settings.embedding_document_prefix,
+            base_url=api_base_url,
+            api_key=api_key,
+            model=model,
+            dimension=dimension,
+            api_path=api_path,
+            query_prefix=query_prefix,
+            document_prefix=document_prefix,
         )
-    raise ValueError(f"Unsupported embedding provider: {settings.embedding_provider}")
+    raise ValueError(f"Unsupported embedding provider: {provider}")
 
 
 def extract_openai_embedding(response: dict[str, Any]) -> list[float]:

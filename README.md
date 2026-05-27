@@ -14,6 +14,7 @@ This repository is being built phase by phase as a runnable learning project, no
 - `docs/SUPPORT_TICKETS.md` - derived support ticket generation guide
 - `docs/POLICY_RAG.md` - policy document indexing and search guide
 - `docs/BUSINESS_TOOLS.md` - controlled business tool guide
+- `docs/AGENT_WORKFLOW.md` - LangGraph workflow guide
 - `docs/CODEX_TASKS.md` - staged implementation tasks for Codex
 - `docs/API_CONTRACT.yaml` - initial API contract
 - `data/policies/` - versioned policy documents for RAG
@@ -25,6 +26,7 @@ This repository is being built phase by phase as a runnable learning project, no
 Run tests:
 
 ```powershell
+python -m pip install -e "apps/api[test,local-rag,agent]"
 python -m pytest
 ```
 
@@ -135,6 +137,23 @@ POST http://127.0.0.1:8000/api/tools/seller-quality
 ```
 
 See `docs/BUSINESS_TOOLS.md` for request examples and current decision rules.
+
+## Agent Workflow
+
+Phase 7 exposes the LangGraph agent workflow:
+
+```powershell
+POST http://127.0.0.1:8000/api/agent/run
+POST http://127.0.0.1:8000/api/chat
+```
+
+Run one local case from the command line:
+
+```powershell
+python scripts/run_agent_case.py "订单 1b3190b2dfa9d789e1f14c05b647a14a 延迟送达，是否可以赔付？" --order-id 1b3190b2dfa9d789e1f14c05b647a14a
+```
+
+The response includes intent, decision, approval state, citations, tool calls, a visible plan, and step trace. See `docs/AGENT_WORKFLOW.md`.
 
 ## Notes
 

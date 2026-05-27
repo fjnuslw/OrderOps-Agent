@@ -1,0 +1,131 @@
+# Agent Workflow
+
+Phase 7 adds the first real LangGraph orchestration layer for OrderOps Agent.
+
+It does not replace the Phase 6 business tools. The graph is the coordinator: it decides whether the input is safe, what the user wants, what evidence is needed, which tool should run, whether a draft ticket is allowed, and what auditable answer should be returned.
+
+## Entry Points
+
+API:
+
+```text
+POST /api/agent/run
+POST /api/chat
+```
+
+Local CLI:
+
+```powershell
+python scripts/run_agent_case.py "订单 1b3190b2dfa9d789e1f14c05b647a14a 延迟送达，是否可以赔付？" --order-id 1b3190b2dfa9d789e1f14c05b647a14a
+```
+
+## Main Files
+
+- `apps/api/src/orderops_api/agent/state.py` defines request, output, step trace, plan, citations, and mutable graph state.
+- `apps/api/src/orderops_api/agent/guard.py` contains deterministic guard rules, ID extraction, intent routing helpers, and approved SQL templates.
+- `apps/api/src/orderops_api/agent/graph.py` builds the LangGraph state machine.
+- `apps/api/src/orderops_api/routers/agent.py` exposes the workflow through FastAPI.
+- `scripts/run_agent_case.py` runs one local case from the command line.
+
+## Graph Nodes
+
+```mermaid
+flowchart TD
+    A["input_guard"] --> B{"safe?"}
+    B -->|no| Z["final_composer"]
+    B -->|yes| C["intent_router"]
+    C --> D{"has required context?"}
+    D -->|no| Z
+    D -->|yes| E["query_rewrite"]
+    E --> F["plan_builder"]
+    F --> G{"intent route"}
+    G -->|delivery/refund| H["order_summary"]
+    H --> I["policy_retriever"]
+    I --> J{"decision route"}
+    J -->|delivery| K["delivery_compensation"]
+    J -->|refund| L["refund_eligibility"]
+    K --> M["rule_verifier"]
+    L --> M
+    M --> N["approval_gate"]
+    N --> O{"draft needed?"}
+    O -->|yes| P["ticket_draft"]
+    O -->|no| Z
+    P --> Z
+    G -->|policy| I
+    G -->|seller| Q["seller_quality"]
+    G -->|ops sql| R["sql_analysis"]
+    Q --> Z
+    R --> Z
+```
+
+## What Each Node Does
+
+`input_guard`
+
+Blocks prompt injection, dangerous SQL intent, privacy-field extraction, and bypass wording before any tool runs.
+
+`intent_router`
+
+Routes the request into one of these intents:
+
+- `delivery_compensation`
+- `refund_review`
+- `seller_quality`
+- `ops_sql_analysis`
+- `policy_qa`
+- `blocked`
+- `missing_context`
+
+`query_rewrite`
+
+Turns the raw message into a retrieval/tool query and chooses policy document families when the intent is known.
+
+`plan_builder`
+
+Creates a visible plan in the response. This is not hidden chain-of-thought; it is an auditable operational plan such as:
+
+```text
+get_order_summary -> search_policy -> check_delivery_compensation -> create_support_ticket_draft
+```
+
+`order_summary`
+
+Calls the Phase 6 `get_order_summary` tool and records the result in `tool_calls`.
+
+`policy_retriever`
+
+Calls the Phase 6 `search_policy_tool` with BGE embedding, Qdrant vector search, and rerank according to the active RAG configuration.
+
+`delivery_compensation` / `refund_eligibility`
+
+Calls deterministic Phase 6 decision tools. The graph does not let the LLM invent refund or compensation decisions.
+
+`rule_verifier`
+
+Checks whether the business decision can proceed and whether manual approval is required.
+
+`approval_gate`
+
+Converts write-intent decisions into a pending approval state. The agent can create only draft tickets, not final refunds, payments, or real-world actions.
+
+`ticket_draft`
+
+Calls `create_support_ticket_draft` only when approval is required and `auto_create_ticket=true`.
+
+`sql_analysis`
+
+Runs only approved read-only SQL templates. It is not a free-form SQL console.
+
+`final_composer`
+
+Returns a concise answer plus structured fields: intent, decision, approval status, citations, tool calls, plan, and step trace.
+
+## Current Boundaries
+
+- The workflow is deterministic and tool-driven; no LLM planner is wired in yet.
+- Streaming is accepted in the request schema but not implemented yet.
+- Delivery/refund decision tools still perform a small internal policy lookup for safety. Phase 7 limits that second lookup to `top_k=1`, and local embedding/rerank providers are cached inside the API process.
+- Trace details are returned in the API response, but there is not yet a separate trace storage/read endpoint.
+- Evaluation metrics are Phase 8.
+
+These boundaries are intentional for Phase 7: the graph now proves safe orchestration and auditable tool execution before we add evaluation and richer conversation behavior.

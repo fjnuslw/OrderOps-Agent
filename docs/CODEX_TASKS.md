@@ -1,6 +1,6 @@
 # Codex Tasks
 
-本文档把阶段路线拆成可执行任务。当前项目已经完成 Task 0 到 Task 4，下一步进入 Task 5。
+本文档把阶段路线拆成可执行任务。当前项目已经完成 Task 0 到 Task 5，下一步进入 Task 6。
 
 ## Task 0: Repository And API Scaffold
 
@@ -104,7 +104,7 @@
 
 ## Task 5: LangGraph Workflow
 
-状态：下一步。
+状态：已完成。
 
 目标：把 Phase 6 工具串成可追踪状态机。
 
@@ -121,6 +121,14 @@
 - `apps/api/src/orderops_api/agent/state.py`
 - `apps/api/src/orderops_api/agent/graph.py`
 - `scripts/run_agent_case.py`
+
+当前实现补充：
+
+- `apps/api/src/orderops_api/agent/guard.py`
+- `apps/api/src/orderops_api/routers/agent.py`
+- `docs/AGENT_WORKFLOW.md`
+- `tests/agent/test_graph.py`
+- `tests/agent/test_guard.py`
 
 ## Task 6: Evaluation
 
