@@ -9,6 +9,50 @@ from urllib import request
 from orderops_api.core.config import Settings
 
 
+DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+SILICONFLOW_BASE_URL = "https://api.siliconflow.com/v1"
+OPENAI_BASE_URL = "https://api.openai.com/v1"
+CHAT_COMPLETIONS_PATH = "/chat/completions"
+
+KNOWN_PROVIDER_BASE_URLS = {
+    DEEPSEEK_BASE_URL,
+    SILICONFLOW_BASE_URL,
+    OPENAI_BASE_URL,
+}
+LEGACY_DEFAULT_MODELS = {"", "deepseek-v4-pro"}
+
+
+@dataclass(frozen=True)
+class LLMProviderPreset:
+    provider: str
+    default_base_url: str
+    default_model: str
+    default_api_path: str = CHAT_COMPLETIONS_PATH
+    thinking_adapter: str = "none"
+
+
+PROVIDER_PRESETS: dict[str, LLMProviderPreset] = {
+    "deepseek": LLMProviderPreset(
+        provider="deepseek",
+        default_base_url=DEEPSEEK_BASE_URL,
+        default_model="deepseek-v4-pro",
+        thinking_adapter="deepseek",
+    ),
+    "siliconflow": LLMProviderPreset(
+        provider="siliconflow",
+        default_base_url=SILICONFLOW_BASE_URL,
+        default_model="Qwen/Qwen3-32B",
+        thinking_adapter="siliconflow",
+    ),
+    "openai": LLMProviderPreset(
+        provider="openai",
+        default_base_url=OPENAI_BASE_URL,
+        default_model="gpt-4.1-mini",
+        thinking_adapter="none",
+    ),
+}
+
+
 class LLMUnavailable(RuntimeError):
     pass
 
@@ -40,6 +84,7 @@ class DisabledLLMClient:
 
 @dataclass(frozen=True)
 class OpenAICompatibleLLMClient:
+    provider: str
     base_url: str
     api_key: str
     model: str
@@ -49,6 +94,7 @@ class OpenAICompatibleLLMClient:
     timeout_seconds: int = 60
     thinking_enabled: bool = False
     reasoning_effort: str = "medium"
+    thinking_adapter: str = "none"
 
     def chat_json(
         self,
@@ -56,6 +102,18 @@ class OpenAICompatibleLLMClient:
         user_payload: dict[str, Any],
         trace_id: str | None = None,
     ) -> dict[str, Any]:
+        payload = self.build_payload(system_prompt, user_payload)
+
+        response = post_json(
+            f"{self.base_url.rstrip('/')}{self.api_path}",
+            payload,
+            bearer_token=self.api_key,
+            timeout_seconds=self.timeout_seconds,
+            extra_headers={"X-OrderOps-Trace-Id": trace_id or ""},
+        )
+        return extract_chat_json_content(response)
+
+    def build_payload(self, system_prompt: str, user_payload: dict[str, Any]) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
@@ -70,18 +128,12 @@ class OpenAICompatibleLLMClient:
             "stream": False,
             "response_format": {"type": "json_object"},
         }
-        if self.thinking_enabled:
+        if self.thinking_adapter == "siliconflow":
+            payload["enable_thinking"] = self.thinking_enabled
+        elif self.thinking_enabled and self.thinking_adapter == "deepseek":
             payload["thinking"] = {"type": "enabled"}
             payload["reasoning_effort"] = self.reasoning_effort
-
-        response = post_json(
-            f"{self.base_url.rstrip('/')}{self.api_path}",
-            payload,
-            bearer_token=self.api_key,
-            timeout_seconds=self.timeout_seconds,
-            extra_headers={"X-OrderOps-Trace-Id": trace_id or ""},
-        )
-        return extract_chat_json_content(response)
+        return payload
 
 
 def build_llm_client(settings: Settings) -> LLMClient:
@@ -112,22 +164,80 @@ def build_cached_llm_client(
     thinking_enabled: bool,
     reasoning_effort: str,
 ) -> LLMClient:
-    provider = provider.strip().lower()
-    if provider in {"", "none", "disabled", "off"} or not api_key:
+    config = resolve_provider_config(
+        provider=provider,
+        base_url=base_url,
+        api_path=api_path,
+        model=model,
+    )
+    if config["provider"] in {"", "none", "disabled", "off"} or not api_key:
         return DisabledLLMClient()
-    if provider in {"deepseek", "siliconflow", "openai_compatible"}:
+    if config["provider"] in {"deepseek", "siliconflow", "openai", "openai_compatible"}:
         return OpenAICompatibleLLMClient(
-            base_url=base_url,
+            provider=config["provider"],
+            base_url=config["base_url"],
             api_key=api_key,
-            api_path=api_path,
-            model=model,
+            api_path=config["api_path"],
+            model=config["model"],
             temperature=temperature,
             max_tokens=max_tokens,
             timeout_seconds=timeout_seconds,
             thinking_enabled=thinking_enabled,
             reasoning_effort=reasoning_effort,
+            thinking_adapter=config["thinking_adapter"],
         )
-    raise ValueError(f"Unsupported LLM provider: {provider}")
+    raise ValueError(f"Unsupported LLM provider: {config['provider']}")
+
+
+def resolve_provider_config(
+    provider: str,
+    base_url: str,
+    api_path: str,
+    model: str,
+) -> dict[str, str]:
+    normalized_provider = provider.strip().lower()
+    normalized_base_url = base_url.strip().rstrip("/")
+    normalized_api_path = api_path.strip() or CHAT_COMPLETIONS_PATH
+    normalized_model = model.strip()
+
+    if normalized_provider in {"", "none", "disabled", "off"}:
+        return {
+            "provider": normalized_provider,
+            "base_url": normalized_base_url,
+            "api_path": normalized_api_path,
+            "model": normalized_model,
+            "thinking_adapter": "none",
+        }
+
+    preset = PROVIDER_PRESETS.get(normalized_provider)
+    if preset is None and normalized_provider != "openai_compatible":
+        raise ValueError(f"Unsupported LLM provider: {normalized_provider}")
+
+    if preset is None:
+        if not normalized_base_url:
+            raise ValueError("ORDEROPS_LLM_API_BASE_URL is required for openai_compatible providers.")
+        return {
+            "provider": normalized_provider,
+            "base_url": normalized_base_url,
+            "api_path": normalized_api_path,
+            "model": normalized_model,
+            "thinking_adapter": "none",
+        }
+
+    if not normalized_base_url or normalized_base_url in KNOWN_PROVIDER_BASE_URLS:
+        normalized_base_url = preset.default_base_url
+    if normalized_model in LEGACY_DEFAULT_MODELS:
+        normalized_model = preset.default_model
+    if not normalized_api_path:
+        normalized_api_path = preset.default_api_path
+
+    return {
+        "provider": normalized_provider,
+        "base_url": normalized_base_url,
+        "api_path": normalized_api_path,
+        "model": normalized_model,
+        "thinking_adapter": preset.thinking_adapter,
+    }
 
 
 def extract_chat_json_content(response: dict[str, Any]) -> dict[str, Any]:

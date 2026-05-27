@@ -159,7 +159,6 @@ Optional DeepSeek LLM routing and final answer composition can be enabled in you
 
 ```powershell
 ORDEROPS_LLM_PROVIDER=deepseek
-ORDEROPS_LLM_API_BASE_URL=https://api.deepseek.com
 ORDEROPS_LLM_API_KEY=your_key_here
 ORDEROPS_LLM_MODEL=deepseek-v4-pro
 ```
@@ -170,10 +169,11 @@ SiliconFlow can also be used through the same OpenAI-compatible client:
 
 ```powershell
 ORDEROPS_LLM_PROVIDER=siliconflow
-ORDEROPS_LLM_API_BASE_URL=https://api.siliconflow.com/v1
 ORDEROPS_LLM_API_KEY=your_siliconflow_key
 ORDEROPS_LLM_MODEL=Qwen/Qwen2.5-72B-Instruct
 ```
+
+Provider presets fill the normal base URL and chat path automatically. Use `ORDEROPS_LLM_API_BASE_URL` only for a custom OpenAI-compatible endpoint.
 
 ## Notes
 

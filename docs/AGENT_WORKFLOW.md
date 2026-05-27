@@ -130,7 +130,6 @@ The project uses DeepSeek through its OpenAI-compatible API shape:
 
 ```powershell
 ORDEROPS_LLM_PROVIDER=deepseek
-ORDEROPS_LLM_API_BASE_URL=https://api.deepseek.com
 ORDEROPS_LLM_API_KEY=your_key_here
 ORDEROPS_LLM_MODEL=deepseek-v4-pro
 ORDEROPS_LLM_THINKING_ENABLED=0
@@ -138,6 +137,23 @@ ORDEROPS_LLM_REASONING_EFFORT=medium
 ```
 
 Do not commit the real key. Put it only in your local `.env`.
+
+Provider presets fill the normal base URL, chat path, default model, and thinking-field adapter automatically. For common providers, you usually edit only:
+
+```powershell
+ORDEROPS_LLM_PROVIDER=deepseek
+ORDEROPS_LLM_API_KEY=...
+ORDEROPS_LLM_MODEL=...
+```
+
+Current built-in presets:
+
+| Provider | Default base URL | Default model | Notes |
+|---|---|---|---|
+| `deepseek` | `https://api.deepseek.com` | `deepseek-v4-pro` | Uses DeepSeek-style thinking payload only when enabled |
+| `siliconflow` | `https://api.siliconflow.com/v1` | `Qwen/Qwen3-32B` | Uses SiliconFlow `enable_thinking` flag |
+| `openai` | `https://api.openai.com/v1` | `gpt-4.1-mini` | Generic OpenAI chat-compatible preset |
+| `openai_compatible` | user-provided | user-provided | Requires `ORDEROPS_LLM_API_BASE_URL` |
 
 LLM usage is intentionally limited:
 
@@ -152,7 +168,6 @@ SiliconFlow can use the same client:
 
 ```powershell
 ORDEROPS_LLM_PROVIDER=siliconflow
-ORDEROPS_LLM_API_BASE_URL=https://api.siliconflow.com/v1
 ORDEROPS_LLM_API_KEY=your_siliconflow_key
 ORDEROPS_LLM_MODEL=Qwen/Qwen2.5-72B-Instruct
 ORDEROPS_LLM_THINKING_ENABLED=0
