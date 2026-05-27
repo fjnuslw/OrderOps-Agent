@@ -174,6 +174,7 @@ ORDEROPS_LLM_MODEL=Qwen/Qwen2.5-72B-Instruct
 ```
 
 Provider presets fill the normal base URL and chat path automatically. Use `ORDEROPS_LLM_API_BASE_URL` only for a custom OpenAI-compatible endpoint.
+For SiliconFlow, the preset uses the China endpoint `https://api.siliconflow.cn/v1`; set `ORDEROPS_LLM_API_BASE_URL=https://api.siliconflow.com/v1` only if your key belongs to the global endpoint.
 
 ## Notes
 

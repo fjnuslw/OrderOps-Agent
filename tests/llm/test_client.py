@@ -46,7 +46,7 @@ def test_siliconflow_client_uses_provider_preset_with_only_provider_key_and_mode
     )
 
     assert isinstance(client, OpenAICompatibleLLMClient)
-    assert client.base_url == "https://api.siliconflow.com/v1"
+    assert client.base_url == "https://api.siliconflow.cn/v1"
     assert client.model == "Qwen/Qwen2.5-72B-Instruct"
     assert client.provider == "siliconflow"
     assert client.thinking_adapter == "siliconflow"
@@ -65,8 +65,24 @@ def test_siliconflow_preset_overrides_leftover_deepseek_default_url_and_model() 
     )
 
     assert isinstance(client, OpenAICompatibleLLMClient)
-    assert client.base_url == "https://api.siliconflow.com/v1"
+    assert client.base_url == "https://api.siliconflow.cn/v1"
     assert client.model == "Qwen/Qwen3-32B"
+
+
+def test_siliconflow_preserves_explicit_global_domain() -> None:
+    client = build_llm_client(
+        settings_from_env(
+            {
+                "ORDEROPS_LLM_PROVIDER": "siliconflow",
+                "ORDEROPS_LLM_API_BASE_URL": "https://api.siliconflow.com/v1",
+                "ORDEROPS_LLM_API_KEY": "secret",
+                "ORDEROPS_LLM_MODEL": "Qwen/Qwen3-32B",
+            }
+        )
+    )
+
+    assert isinstance(client, OpenAICompatibleLLMClient)
+    assert client.base_url == "https://api.siliconflow.com/v1"
 
 
 def test_siliconflow_payload_uses_enable_thinking_flag() -> None:

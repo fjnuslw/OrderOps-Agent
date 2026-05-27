@@ -10,13 +10,15 @@ from orderops_api.core.config import Settings
 
 
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
-SILICONFLOW_BASE_URL = "https://api.siliconflow.com/v1"
+SILICONFLOW_BASE_URL = "https://api.siliconflow.cn/v1"
+SILICONFLOW_GLOBAL_BASE_URL = "https://api.siliconflow.com/v1"
 OPENAI_BASE_URL = "https://api.openai.com/v1"
 CHAT_COMPLETIONS_PATH = "/chat/completions"
 
 KNOWN_PROVIDER_BASE_URLS = {
     DEEPSEEK_BASE_URL,
     SILICONFLOW_BASE_URL,
+    SILICONFLOW_GLOBAL_BASE_URL,
     OPENAI_BASE_URL,
 }
 LEGACY_DEFAULT_MODELS = {"", "deepseek-v4-pro"}
@@ -29,6 +31,7 @@ class LLMProviderPreset:
     default_model: str
     default_api_path: str = CHAT_COMPLETIONS_PATH
     thinking_adapter: str = "none"
+    allowed_base_urls: tuple[str, ...] = ()
 
 
 PROVIDER_PRESETS: dict[str, LLMProviderPreset] = {
@@ -37,18 +40,21 @@ PROVIDER_PRESETS: dict[str, LLMProviderPreset] = {
         default_base_url=DEEPSEEK_BASE_URL,
         default_model="deepseek-v4-pro",
         thinking_adapter="deepseek",
+        allowed_base_urls=(DEEPSEEK_BASE_URL,),
     ),
     "siliconflow": LLMProviderPreset(
         provider="siliconflow",
         default_base_url=SILICONFLOW_BASE_URL,
         default_model="Qwen/Qwen3-32B",
         thinking_adapter="siliconflow",
+        allowed_base_urls=(SILICONFLOW_BASE_URL, SILICONFLOW_GLOBAL_BASE_URL),
     ),
     "openai": LLMProviderPreset(
         provider="openai",
         default_base_url=OPENAI_BASE_URL,
         default_model="gpt-4.1-mini",
         thinking_adapter="none",
+        allowed_base_urls=(OPENAI_BASE_URL,),
     ),
 }
 
@@ -224,7 +230,9 @@ def resolve_provider_config(
             "thinking_adapter": "none",
         }
 
-    if not normalized_base_url or normalized_base_url in KNOWN_PROVIDER_BASE_URLS:
+    if not normalized_base_url:
+        normalized_base_url = preset.default_base_url
+    elif normalized_base_url in KNOWN_PROVIDER_BASE_URLS and normalized_base_url not in preset.allowed_base_urls:
         normalized_base_url = preset.default_base_url
     if normalized_model in LEGACY_DEFAULT_MODELS:
         normalized_model = preset.default_model

@@ -94,7 +94,7 @@ def call_llm_route_plan(client: LLMClient, state: AgentState) -> LLMRoutePlan:
         "known_seller_id": state.get("seller_id"),
     }
     raw = client.chat_json(ROUTER_SYSTEM_PROMPT, payload, trace_id=state.get("trace_id"))
-    raw = normalize_route_payload(raw)
+    raw = normalize_route_payload(raw, fallback_query=state["message"])
     plan = LLMRoutePlan.model_validate(raw)
     return sanitize_route_plan(plan, state)
 
@@ -153,23 +153,40 @@ def sanitize_route_plan(plan: LLMRoutePlan, state: AgentState) -> LLMRoutePlan:
     )
 
 
-def normalize_route_payload(raw: dict[str, Any]) -> dict[str, Any]:
+def normalize_route_payload(raw: dict[str, Any], fallback_query: str = "") -> dict[str, Any]:
     payload = dict(raw)
     plan = payload.get("plan")
     if not isinstance(plan, list):
         payload["plan"] = []
-        return payload
+    else:
+        normalized_plan: list[dict[str, str]] = []
+        for item in plan:
+            if isinstance(item, str):
+                normalized_plan.append({"tool": item, "reason": "LLM selected this tool."})
+            elif isinstance(item, dict):
+                tool = str(item.get("tool") or item.get("name") or "")
+                reason = str(item.get("reason") or item.get("description") or "LLM selected this tool.")
+                if tool:
+                    normalized_plan.append({"tool": tool, "reason": reason})
+        payload["plan"] = normalized_plan
 
-    normalized_plan: list[dict[str, str]] = []
-    for item in plan:
-        if isinstance(item, str):
-            normalized_plan.append({"tool": item, "reason": "LLM selected this tool."})
-        elif isinstance(item, dict):
-            tool = str(item.get("tool") or item.get("name") or "")
-            reason = str(item.get("reason") or item.get("description") or "LLM selected this tool.")
-            if tool:
-                normalized_plan.append({"tool": tool, "reason": reason})
-    payload["plan"] = normalized_plan
+    if not payload.get("intent"):
+        tool_names = {item["tool"] for item in payload.get("plan", [])}
+        if "missing_context" in tool_names:
+            payload["intent"] = "missing_context"
+        elif "check_delivery_compensation" in tool_names:
+            payload["intent"] = "delivery_compensation"
+        elif "check_refund_eligibility" in tool_names:
+            payload["intent"] = "refund_review"
+        elif "analyze_seller_quality" in tool_names:
+            payload["intent"] = "seller_quality"
+        elif "sql_analysis" in tool_names:
+            payload["intent"] = "ops_sql_analysis"
+        elif "search_policy" in tool_names:
+            payload["intent"] = "policy_qa"
+
+    if not payload.get("rewritten_query"):
+        payload["rewritten_query"] = str(payload.get("query") or fallback_query or "missing context")
     return payload
 
 

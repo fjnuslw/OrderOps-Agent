@@ -151,7 +151,7 @@ Current built-in presets:
 | Provider | Default base URL | Default model | Notes |
 |---|---|---|---|
 | `deepseek` | `https://api.deepseek.com` | `deepseek-v4-pro` | Uses DeepSeek-style thinking payload only when enabled |
-| `siliconflow` | `https://api.siliconflow.com/v1` | `Qwen/Qwen3-32B` | Uses SiliconFlow `enable_thinking` flag |
+| `siliconflow` | `https://api.siliconflow.cn/v1` | `Qwen/Qwen3-32B` | Uses SiliconFlow `enable_thinking` flag; set `.com` manually only for global keys |
 | `openai` | `https://api.openai.com/v1` | `gpt-4.1-mini` | Generic OpenAI chat-compatible preset |
 | `openai_compatible` | user-provided | user-provided | Requires `ORDEROPS_LLM_API_BASE_URL` |
 

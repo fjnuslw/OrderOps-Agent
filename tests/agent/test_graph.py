@@ -174,6 +174,21 @@ class LoosePlanLLMClient(FakeLLMClient):
         return super().chat_json(system_prompt, user_payload, trace_id)
 
 
+class MissingContextPlanOnlyLLMClient(FakeLLMClient):
+    def chat_json(self, system_prompt, user_payload, trace_id=None):
+        if "Allowed intents" in system_prompt:
+            self.calls.append("intent_router")
+            return {
+                "plan": [
+                    {
+                        "tool": "missing_context",
+                        "reason": "Order id is required before compensation can be checked.",
+                    }
+                ]
+            }
+        return super().chat_json(system_prompt, user_payload, trace_id)
+
+
 def test_delivery_workflow_runs_policy_decision_and_ticket_nodes() -> None:
     toolbox = FakeToolbox()
 
@@ -304,3 +319,21 @@ def test_llm_route_accepts_loose_plan_items() -> None:
     assert result.llm_calls[0].status == "success"
     assert result.plan[0].tool == "get_order_summary"
     assert result.plan[0].reason == "LLM selected this tool."
+
+
+def test_llm_route_infers_missing_context_from_plan_only_response() -> None:
+    toolbox = FakeToolbox()
+    llm = MissingContextPlanOnlyLLMClient()
+
+    result = run_agent(
+        AgentRunInput(
+            message="订单延迟送达可以赔付吗？",
+            trace_id="test-llm-plan-only",
+            auto_create_ticket=False,
+        ),
+        toolbox.as_agent_tools(llm_client=llm),
+    )
+
+    assert result.intent == "missing_context"
+    assert result.llm_calls[0].status == "success"
+    assert result.tool_calls == []
