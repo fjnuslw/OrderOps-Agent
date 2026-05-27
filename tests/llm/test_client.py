@@ -31,6 +31,23 @@ def test_deepseek_client_uses_openai_compatible_settings() -> None:
     assert client.thinking_enabled
 
 
+def test_siliconflow_client_uses_openai_compatible_settings() -> None:
+    client = build_llm_client(
+        settings_from_env(
+            {
+                "ORDEROPS_LLM_PROVIDER": "siliconflow",
+                "ORDEROPS_LLM_API_BASE_URL": "https://api.siliconflow.com/v1",
+                "ORDEROPS_LLM_API_KEY": "secret",
+                "ORDEROPS_LLM_MODEL": "Qwen/Qwen2.5-72B-Instruct",
+            }
+        )
+    )
+
+    assert isinstance(client, OpenAICompatibleLLMClient)
+    assert client.base_url == "https://api.siliconflow.com/v1"
+    assert client.model == "Qwen/Qwen2.5-72B-Instruct"
+
+
 def test_extract_chat_json_content_parses_json_string() -> None:
     payload = {
         "choices": [

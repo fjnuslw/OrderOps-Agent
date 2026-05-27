@@ -148,6 +148,18 @@ LLM usage is intentionally limited:
 - LLM may not decide refund or compensation eligibility.
 - LLM may not bypass `input_guard`, SQL guard, or approval gate.
 
+SiliconFlow can use the same client:
+
+```powershell
+ORDEROPS_LLM_PROVIDER=siliconflow
+ORDEROPS_LLM_API_BASE_URL=https://api.siliconflow.com/v1
+ORDEROPS_LLM_API_KEY=your_siliconflow_key
+ORDEROPS_LLM_MODEL=Qwen/Qwen2.5-72B-Instruct
+ORDEROPS_LLM_THINKING_ENABLED=0
+```
+
+The SiliconFlow documentation currently lists Qwen choices such as `Qwen/Qwen2.5-72B-Instruct`, `Qwen/Qwen2.5-72B-Instruct-128K`, and `Qwen/Qwen3-32B`. If you want a lower-cost smoke test first, use `Qwen/Qwen3-32B`.
+
 ## Current Boundaries
 
 - The workflow remains tool-governed even when LLM routing is enabled; deterministic tools still make refund and compensation decisions.

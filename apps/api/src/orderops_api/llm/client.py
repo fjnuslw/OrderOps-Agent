@@ -115,7 +115,7 @@ def build_cached_llm_client(
     provider = provider.strip().lower()
     if provider in {"", "none", "disabled", "off"} or not api_key:
         return DisabledLLMClient()
-    if provider in {"deepseek", "openai_compatible"}:
+    if provider in {"deepseek", "siliconflow", "openai_compatible"}:
         return OpenAICompatibleLLMClient(
             base_url=base_url,
             api_key=api_key,

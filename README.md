@@ -166,6 +166,15 @@ ORDEROPS_LLM_MODEL=deepseek-v4-pro
 
 When no LLM key is configured, the workflow falls back to the deterministic router and composer.
 
+SiliconFlow can also be used through the same OpenAI-compatible client:
+
+```powershell
+ORDEROPS_LLM_PROVIDER=siliconflow
+ORDEROPS_LLM_API_BASE_URL=https://api.siliconflow.com/v1
+ORDEROPS_LLM_API_KEY=your_siliconflow_key
+ORDEROPS_LLM_MODEL=Qwen/Qwen2.5-72B-Instruct
+```
+
 ## Notes
 
 The raw Olist dataset is intentionally ignored by Git through `data/raw/*`. Keep downloaded CSV files local and cite the Kaggle source when publishing derived analysis or results.
