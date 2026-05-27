@@ -5,11 +5,11 @@
 ## 当前状态
 
 - 已有项目规格、任务拆分、API 契约草稿、政策文档、评测种子、数据库 schema 草稿和架构图。
-- 已有最小 FastAPI 后端、测试、Docker Compose、本地配置模块。
+- 已有 FastAPI 后端、测试、Docker Compose、本地配置模块。
 - 已导入 Olist 核心订单数据到 PostgreSQL。
 - 已生成派生售后工单数据。
-- 已完成政策 RAG 第一版，并在本机切换到真实本地模型：`D:\models\bge-m3` embedding 与 `D:\models\bge-reranker-v2-m3` rerank。
-- 已开始 Phase 6：实现订单摘要、政策检索、延迟赔付判断、工单草稿四个受控工具接口，并记录 `tool_call_logs`。
+- 已完成政策 RAG，并在本机切换到真实本地模型：`D:\models\bge-m3` embedding 与 `D:\models\bge-reranker-v2-m3` rerank。
+- 已完成 Phase 6 业务工具层：订单摘要、政策检索、延迟赔付判断、退款资格判断、工单草稿、审批流转、只读 SQL 分析、卖家质量分析、工具调用日志。
 - `data/raw/` 只保留占位文件，真实 CSV 不提交到 GitHub。
 
 ## 总体目标
@@ -37,23 +37,11 @@
 - `.gitignore` 避免提交密钥、虚拟环境、原始大数据和生成报告。
 - 本文档明确实际开发顺序。
 
-暂缓：
-
-- 不引入复杂 CI。
-- 不提前写部署文档。
-
 ### Phase 1: Backend Scaffold
 
 状态：已完成。
 
 目标：建立最小 FastAPI 项目骨架。
-
-验收：
-
-- 有 `apps/api` 后端目录。
-- `GET /health` 返回 `{"status": "ok"}`。
-- 有最小 pytest 测试。
-- 本地测试命令可以跑通。
 
 当前实现：
 
@@ -61,23 +49,9 @@
 - 健康检查路由：`apps/api/src/orderops_api/routers/health.py`
 - 健康检查测试：`tests/api/test_health.py`
 
-暂缓：
-
-- 不实现真实业务工具。
-- 不接入大模型。
-- 不连接真实数据库查询。
-
 ### Phase 2: Local Infrastructure
 
 状态：已完成，并通过本地 Docker 验证。PostgreSQL 宿主机端口使用 `15432`，避免和本机已有 `5432` 服务冲突。
-
-目标：建立本地依赖服务，并让应用配置能读取这些地址。
-
-验收：
-
-- `docker-compose.yml` 能启动 PostgreSQL、Redis、Qdrant。
-- `.env.example` 记录必要环境变量。
-- 后端配置层能读取数据库、Redis、Qdrant 地址。
 
 当前实现：
 
@@ -87,22 +61,9 @@
 - 配置测试：`tests/api/test_config.py`
 - 本地基础设施说明：`docs/LOCAL_INFRA.md`
 
-暂缓：
-
-- 不做生产级高可用。
-- 不做云部署。
-
 ### Phase 3: Database and ETL
 
 状态：已完成 schema bootstrap、ETL 导入和本地 smoke check。原始 Olist CSV 保留在 `data/raw/`，不提交到 GitHub。
-
-目标：把 Olist 原始 CSV 导入 PostgreSQL，形成可查询业务数据。
-
-验收：
-
-- `scripts/etl_olist.py` 能读取 `data/raw/` 下的 CSV。
-- 核心表至少包含 orders、order_items、payments、reviews、products、sellers、customers。
-- 提供 smoke check，能确认导入数量和关键字段。
 
 当前实现：
 
@@ -112,22 +73,9 @@
 - ETL 文件检查测试：`tests/scripts/test_etl_olist.py`
 - ETL 使用说明：`docs/ETL.md`
 
-暂缓：
-
-- 不追求一次覆盖所有字段。
-- 不做复杂数据清洗平台。
-
 ### Phase 4: Derived Support Tickets
 
 状态：已完成本地生成和 smoke check。当前默认每个 scenario 生成最多 100 条工单，共 400 条。
-
-目标：从订单数据派生售后工单，用于 Agent 场景和评测。
-
-验收：
-
-- 能生成至少 100 条 `support_tickets`。
-- 覆盖延迟送达、低分评论、取消订单、高金额订单等 scenario。
-- 工单 schema 稳定，可被后续工具读取。
 
 当前实现：
 
@@ -136,16 +84,9 @@
 - 工单说明文档：`docs/SUPPORT_TICKETS.md`
 - 本地 smoke check：共 400 条，4 类 scenario 各 100 条。
 
-暂缓：
-
-- 不做人工标注平台。
-- 不追求完全真实客服系统字段。
-
 ### Phase 5: Policy RAG
 
 状态：已完成，并从测试 fallback 切换到真实本地模型路线。
-
-目标：先做小而稳的政策检索。
 
 验收：
 
@@ -171,58 +112,64 @@
 
 - `HashingEmbeddingProvider` 和 `LexicalReranker` 只用于快速测试和无模型 fallback，不作为本机实际 RAG 路线。
 - 如果更换 embedding 模型或维度，必须重新运行 `scripts/index_policies.py`，因为 Qdrant collection 的向量维度需要一致。
-
-暂缓：
-
-- 不一开始做复杂混合召回。
-- 不把某个大模型权重提交到仓库。
+- 当前 policy 是 Demo 合成政策，并显式区分业务规则和 Olist 数据字段映射。
 
 ### Phase 6: Business Tools
 
-状态：进行中，已完成第一条可运行工具链和工单草稿写入边界。
+状态：已完成当前阶段收束。
 
-目标：把关键业务动作变成受控工具。
+目标：把关键业务动作变成受控工具，供后续 LangGraph 编排直接调用。
 
 验收：
 
 - 订单查询、政策检索、退款判断、物流赔付、工单草稿使用 Pydantic schema。
-- `create_support_ticket` 默认只生成草稿，并标记 `approval_required`。
-- SQL 工具只允许 SELECT，并有基础拦截测试。
+- `create_support_ticket_draft` 只生成草稿，并标记 `approval_required`。
+- 审批工具能把 pending approval 流转为 approved/rejected，并更新工单状态。
+- SQL 工具只允许 SELECT/WITH，禁止危险写操作和隐私字段，并自动控制 LIMIT。
+- 卖家质量分析返回稳定指标、风险等级和建议动作。
+- 所有工具写入 `tool_call_logs`。
 
 当前实现：
 
 - 订单摘要工具：`apps/api/src/orderops_api/tools/order_tools.py`
 - 政策检索工具包装：`apps/api/src/orderops_api/tools/policy_tools.py`
 - 延迟赔付判断工具：`apps/api/src/orderops_api/tools/delivery_tools.py`
-- 工单草稿与审批工具：`apps/api/src/orderops_api/tools/ticket_tools.py`
+- 退款资格判断工具：`apps/api/src/orderops_api/tools/refund_tools.py`
+- 工单草稿工具：`apps/api/src/orderops_api/tools/ticket_tools.py`
+- 审批流转工具：`apps/api/src/orderops_api/tools/approval_tools.py`
 - SQL Guard 基础规则：`apps/api/src/orderops_api/tools/sql_guard.py`
+- 只读 SQL 分析工具：`apps/api/src/orderops_api/tools/sql_tools.py`
+- 卖家质量分析工具：`apps/api/src/orderops_api/tools/analysis_tools.py`
 - 工具调用日志：`apps/api/src/orderops_api/tools/logging.py`
 - 工具 API 路由：`apps/api/src/orderops_api/routers/tools.py`
 - 工具说明文档：`docs/BUSINESS_TOOLS.md`
-- 本地 smoke check：订单 `1b3190b2dfa9d789e1f14c05b647a14a` 返回 `eligible_with_manual_approval`，引用 `delivery_sla_policy_v1#s3`，并可创建 `draft_pending_approval` 工单草稿。
+
+本地 smoke check：
+
+- 订单 `1b3190b2dfa9d789e1f14c05b647a14a` 返回 `eligible_with_manual_approval`。
+- 工单草稿 `DRAFT-60D7D181E78F` 可由 approval `APR-A2C5C1365168` 审批为 `approved`，工单状态变为 `open`。
+- 退款判断返回 `eligible_with_manual_approval` 并引用 `refund_policy_v1`。
+- SQL 分析能执行订单状态统计，并拦截 `customer_unique_id` 隐私字段。
+- 卖家 `7a67c85e85bb2ce8582c35f2203ad736` 可返回质量指标、风险等级和建议动作。
 
 暂缓：
 
-- 暂不暴露 SQL 分析执行接口，只保留 SQL Guard 规则。
-- 暂不实现审批通过/拒绝接口，也不执行任何资金动作。
+- 不执行真实资金动作。
 - 不做全功能客服后台。
+- 不把 SQL 工具开放为任意写操作。
 
 ### Phase 7: LangGraph Workflow
 
-状态：待开始。
+状态：下一阶段。
 
-目标：把工具串成可追踪状态机。
+目标：把 Phase 6 工具串成可追踪状态机。
 
 验收：
 
-- 延迟送达案例能触发订单查询、政策检索、规则判断和工单草稿。
+- 延迟送达案例能触发订单查询、政策检索、规则判断、工单草稿和审批等待。
+- 退款案例能触发订单查询、退款政策检索、退款资格判断和审批等待。
 - Prompt Injection 案例不会调用危险 SQL 工具。
 - 每次运行能输出结构化 trace 或 step log。
-
-暂缓：
-
-- 不追求复杂多 Agent 协作。
-- 不先做华丽 UI。
 
 ### Phase 8: Evaluation
 
@@ -236,11 +183,6 @@
 - 输出 `eval_report.json` 和 `eval_report.md`。
 - 至少包含 Retrieval Recall@5、Tool Selection Accuracy、Task Success Rate、Risk Control Accuracy、p95 latency。
 
-暂缓：
-
-- 不把评测做成完整平台。
-- 不把模型表现包装成无法复现的结论。
-
 ## 当前下一步
 
-继续 Phase 6：补审批通过/拒绝接口，再实现只读 SQL 分析工具的受控执行。每个写意图都必须默认进入人工审批。
+进入 Phase 7：基于 Phase 6 的受控工具实现 LangGraph workflow。先做延迟送达和退款复核两条主路径，再补 prompt injection 防护节点和可审计 trace。

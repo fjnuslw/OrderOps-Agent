@@ -38,6 +38,54 @@ paths:
       responses:
         "200":
           description: Ticket result
+  /api/tools/order-summary:
+    post:
+      summary: Get a controlled order summary
+      responses:
+        "200":
+          description: Order summary tool result
+  /api/tools/policy-search:
+    post:
+      summary: Search policy RAG with citations
+      responses:
+        "200":
+          description: Policy search tool result
+  /api/tools/delivery-compensation:
+    post:
+      summary: Check delayed delivery compensation eligibility
+      responses:
+        "200":
+          description: Delivery compensation decision
+  /api/tools/refund-eligibility:
+    post:
+      summary: Check refund review eligibility
+      responses:
+        "200":
+          description: Refund eligibility decision
+  /api/tools/support-ticket-draft:
+    post:
+      summary: Create a support ticket draft and pending approval
+      responses:
+        "200":
+          description: Draft ticket and approval result
+  /api/tools/approval-decision:
+    post:
+      summary: Approve or reject a pending approval
+      responses:
+        "200":
+          description: Approval transition result
+  /api/tools/sql-analysis:
+    post:
+      summary: Run guarded read-only SQL analysis
+      responses:
+        "200":
+          description: SQL analysis result or guard block
+  /api/tools/seller-quality:
+    post:
+      summary: Analyze seller operational quality
+      responses:
+        "200":
+          description: Seller quality metrics and risk level
   /api/evals/run:
     post:
       summary: Run evaluation cases

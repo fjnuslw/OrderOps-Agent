@@ -8,6 +8,9 @@ def test_sql_guard_allows_select_and_adds_limit() -> None:
     assert add_limit_if_missing("SELECT order_id FROM orders LIMIT 10") == (
         "SELECT order_id FROM orders LIMIT 10"
     )
+    assert add_limit_if_missing("SELECT order_id FROM orders LIMIT 1000", limit=50) == (
+        "SELECT order_id FROM orders LIMIT 50"
+    )
 
 
 def test_sql_guard_rejects_write_statements() -> None:

@@ -54,6 +54,16 @@ def ensure_select_only(sql: str) -> str:
 
 def add_limit_if_missing(sql: str, limit: int = 100) -> str:
     cleaned = ensure_select_only(sql)
-    if re.search(r"\blimit\s+\d+\b", cleaned, flags=re.IGNORECASE):
-        return cleaned
+    match = re.search(r"\blimit\s+(\d+)\b", cleaned, flags=re.IGNORECASE)
+    if match is not None:
+        current_limit = int(match.group(1))
+        if current_limit <= limit:
+            return cleaned
+        return re.sub(
+            r"\blimit\s+\d+\b",
+            f"LIMIT {limit}",
+            cleaned,
+            count=1,
+            flags=re.IGNORECASE,
+        )
     return f"{cleaned} LIMIT {limit}"
