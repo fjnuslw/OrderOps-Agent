@@ -11,6 +11,7 @@ from urllib.error import URLError
 from orderops_api.core.config import get_settings
 from orderops_api.agent.graph import run_agent
 from orderops_api.agent.state import AgentRunInput
+from orderops_api.evaluation.runner import run_eval
 from orderops_api.main import app
 from orderops_api.rag.policies import load_policy_chunks
 
@@ -58,6 +59,7 @@ def check_fastapi_routes() -> list[CheckResult]:
         "/health",
         "/api/agent/run",
         "/api/chat",
+        "/api/evals/run",
         "/api/tools/order-summary",
         "/api/tools/policy-search",
         "/api/tools/delivery-compensation",
@@ -252,6 +254,37 @@ def check_agent_workflow() -> list[CheckResult]:
         return [fail(phase, "agent_workflow", str(exc))]
 
 
+def check_evaluation_runner() -> list[CheckResult]:
+    phase = "Phase 8"
+    try:
+        report = run_eval(
+            cases_path=Path("data/eval/eval_cases_seed.csv"),
+            live_llm=False,
+            allow_writes=False,
+            case_ids={"EVAL-008"},
+            write_reports=False,
+        )
+        summary = report.summary
+        if summary.case_count != 1:
+            return [fail(phase, "eval_runner", f"Expected 1 smoke case, got {summary.case_count}.")]
+        if summary.task_success_rate != 1.0:
+            failures = ", ".join(
+                f"{case.case_id}:{'/'.join(case.failure_reasons)}"
+                for case in report.cases
+                if case.failure_reasons
+            )
+            return [fail(phase, "eval_runner", f"Task success below 100%: {failures}")]
+        return [
+            ok(
+                phase,
+                "eval_runner",
+                "Seed eval runner can execute a no-write, no-live-LLM smoke case.",
+            )
+        ]
+    except Exception as exc:
+        return [fail(phase, "eval_runner", str(exc))]
+
+
 def run_checks() -> list[CheckResult]:
     checks: list[Callable[[], list[CheckResult]]] = [
         check_required_paths,
@@ -262,6 +295,7 @@ def run_checks() -> list[CheckResult]:
         check_policy_rag,
         check_business_tools,
         check_agent_workflow,
+        check_evaluation_runner,
     ]
     results: list[CheckResult] = []
     for check in checks:

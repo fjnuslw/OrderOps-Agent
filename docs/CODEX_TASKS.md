@@ -1,6 +1,6 @@
 # Codex Tasks
 
-本文档把阶段路线拆成可执行任务。当前项目已经完成 Task 0 到 Task 5，下一步进入 Task 6。
+本文档把阶段路线拆成可执行任务。当前项目已经完成 Task 0 到 Task 6。
 
 ## Task 0: Repository And API Scaffold
 
@@ -135,7 +135,7 @@
 
 ## Task 6: Evaluation
 
-状态：待开始。
+状态：已完成当前种子回归套件。
 
 目标：实现 `scripts/run_eval.py` 和指标计算。
 
@@ -144,3 +144,11 @@
 - 输出 `eval_report.json` 和 `eval_report.md`。
 - 包含 Retrieval Recall@5、Tool Selection Accuracy、Task Success Rate、Risk Control Accuracy、p95 latency。
 - 使用固定 eval cases，失败案例可追溯。
+
+主要文件：
+
+- `data/eval/eval_cases_seed.csv`
+- `apps/api/src/orderops_api/evaluation/`
+- `apps/api/src/orderops_api/routers/evals.py`
+- `scripts/run_eval.py`
+- `docs/EVALUATION.md`

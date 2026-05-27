@@ -139,9 +139,39 @@ paths:
   /api/evals/run:
     post:
       summary: Run evaluation cases
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cases_path:
+                  type: string
+                  default: data/eval/eval_cases_seed.csv
+                reports_dir:
+                  type: string
+                  default: reports/eval
+                case_ids:
+                  type: array
+                  items:
+                    type: string
+                case_limit:
+                  type: integer
+                  nullable: true
+                  minimum: 1
+                live_llm:
+                  type: boolean
+                  default: false
+                allow_writes:
+                  type: boolean
+                  default: false
+                write_reports:
+                  type: boolean
+                  default: false
       responses:
         "200":
-          description: Evaluation run summary
+          description: Evaluation run report with summary metrics and per-case failures
   /api/traces/{trace_id}:
     get:
       summary: Get trace detail

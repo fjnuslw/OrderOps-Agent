@@ -184,7 +184,16 @@
 
 ### Phase 8: Evaluation
 
-状态：待开始。
+状态：当前种子回归套件已完成。
+
+当前实现：
+
+- `data/eval/eval_cases_seed.csv` 定义 8 个固定评测 case。
+- `apps/api/src/orderops_api/evaluation/` 负责加载 case、记录工具调用、计算指标和渲染报告。
+- `scripts/run_eval.py` 提供命令行评测入口。
+- `POST /api/evals/run` 提供 FastAPI 评测入口。
+- `scripts/phase_smoke_check.py` 包含一个不调用真实 LLM、不写业务数据的 Phase 8 smoke case。
+- `docs/EVALUATION.md` 记录指标、命令和安全默认值。
 
 目标：用小评测集约束 Agent 行为。
 
@@ -196,4 +205,4 @@
 
 ## 当前下一步
 
-进入 Phase 8：基于 Phase 7 的稳定工作流实现评测系统。先用固定评测样本覆盖检索召回、工具选择、工具参数、任务成功率、风险控制和延迟，再输出 JSON/Markdown 报告。
+Phase 8 已经收束。下一步更适合在 trace 持久化、多轮记忆、或小型运营 UI 之间选择一个方向继续推进。

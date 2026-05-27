@@ -14,7 +14,7 @@
 | Phase 5 | Done | Real local BGE policy RAG | Qdrant 1024-dim collection, policy search smoke |
 | Phase 6 | Done | Controlled business tools | 8 tool APIs, logs, unit and smoke tests |
 | Phase 7 | Done | LLM-assisted LangGraph workflow | `/api/agent/run`, `/api/chat`, graph tests, guard smoke |
-| Phase 8 | Later | Evaluation runner and reports | not started |
+| Phase 8 | Done | Evaluation runner and reports | 8 seed cases, metrics, `/api/evals/run`, smoke check |
 
 ## Current Health Command
 
@@ -135,6 +135,18 @@ The response includes intent, visible plan, citations, tool calls, LLM calls, ap
 
 DeepSeek can be enabled through local `.env` with `ORDEROPS_LLM_PROVIDER=deepseek`, `ORDEROPS_LLM_MODEL=deepseek-v4-pro`, and `ORDEROPS_LLM_API_KEY`. Without a key, the workflow remains runnable through deterministic fallbacks.
 
+### Phase 8: Evaluation
+
+The project now has a repeatable agent eval loop:
+
+- seed cases: `data/eval/eval_cases_seed.csv`
+- runner: `apps/api/src/orderops_api/evaluation/`
+- CLI: `scripts/run_eval.py`
+- API: `POST /api/evals/run`
+- docs: `docs/EVALUATION.md`
+
+The default eval disables live LLM calls and write tools. It checks intent accuracy, tool selection, tool arguments, retrieval citations, business decisions, approval state, risk control, task success, and latency.
+
 ## Known Boundaries
 
 - The project is a local demo, not production deployment.
@@ -143,16 +155,8 @@ DeepSeek can be enabled through local `.env` with `ORDEROPS_LLM_PROVIDER=deepsee
 - SQL analysis is read-only and guarded; it is not an admin SQL console.
 - Streaming is accepted in the agent request schema but not implemented yet.
 - Trace details are returned in responses, but a separate trace storage API is not implemented yet.
-- Phase 8 evaluation metrics are not implemented yet.
+- The Phase 8 eval set is still a seed regression suite, not a large external benchmark.
 
 ## Next Phase
 
-Phase 8 should add evaluation with:
-
-- fixed eval cases
-- retrieval recall checks
-- tool selection accuracy
-- tool argument accuracy
-- task success rate
-- risk-control accuracy
-- latency reporting
+The next useful phases are trace persistence, more realistic multi-turn memory, and a small operator UI. The eval suite should also grow from the current seed set into a larger frozen regression set.

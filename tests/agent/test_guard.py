@@ -22,6 +22,7 @@ def test_input_guard_blocks_prompt_injection_and_dangerous_sql() -> None:
 
 def test_intent_router_distinguishes_policy_question_from_order_case() -> None:
     assert infer_intent("延迟送达政策是什么", "agent") == "policy_qa"
+    assert infer_intent("平台对延迟送达超过预计日期的订单如何处理？", "agent") == "policy_qa"
     assert infer_intent("订单延迟送达可以赔付吗", "agent") == "delivery_compensation"
     assert infer_intent("统计订单状态分布", "ops_admin") == "ops_sql_analysis"
 

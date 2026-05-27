@@ -42,8 +42,23 @@ def detect_prompt_injection(text: str) -> str | None:
 
 def infer_intent(message: str, user_role: str) -> str:
     text = message.lower()
-    asks_policy_only = any(keyword in text for keyword in ("政策", "policy", "规则", "条款"))
-    has_case_context = any(keyword in text for keyword in ("订单", "order", "申请", "能否", "是否", "可以", "帮我"))
+    asks_policy_only = any(
+        keyword in text
+        for keyword in (
+            "政策",
+            "policy",
+            "规则",
+            "条款",
+            "平台",
+            "规定",
+            "流程",
+            "如何处理",
+            "怎么处理",
+        )
+    )
+    has_case_context = extract_hex_id(text) is not None or any(
+        keyword in text for keyword in ("申请", "能否", "是否", "可以", "帮我", "用户", "这个订单")
+    )
     if asks_policy_only and not has_case_context:
         return "policy_qa"
     if any(keyword in text for keyword in ("退款", "refund", "退货", "返款")):

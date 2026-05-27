@@ -15,6 +15,7 @@ This repository is being built phase by phase as a runnable learning project, no
 - `docs/POLICY_RAG.md` - policy document indexing and search guide
 - `docs/BUSINESS_TOOLS.md` - controlled business tool guide
 - `docs/AGENT_WORKFLOW.md` - LangGraph workflow guide
+- `docs/EVALUATION.md` - agent evaluation runner and metrics guide
 - `docs/CODEX_TASKS.md` - staged implementation tasks for Codex
 - `docs/API_CONTRACT.yaml` - initial API contract
 - `data/policies/` - versioned policy documents for RAG
@@ -175,6 +176,24 @@ ORDEROPS_LLM_MODEL=Qwen/Qwen2.5-72B-Instruct
 
 Provider presets fill the normal base URL and chat path automatically. Use `ORDEROPS_LLM_API_BASE_URL` only for a custom OpenAI-compatible endpoint.
 For SiliconFlow, the preset uses the China endpoint `https://api.siliconflow.cn/v1`; set `ORDEROPS_LLM_API_BASE_URL=https://api.siliconflow.com/v1` only if your key belongs to the global endpoint.
+
+## Evaluation
+
+Phase 8 adds a repeatable evaluation runner for the agent workflow:
+
+```powershell
+python scripts/run_eval.py
+```
+
+The default run disables live LLM calls and write tools, so it is safe for frequent local checks. Reports are generated under `reports/eval/`, which is intentionally ignored by Git.
+
+For a small live LLM smoke test after configuring `.env`:
+
+```powershell
+python scripts/run_eval.py --case-id EVAL-008 --live-llm --no-write-report --json
+```
+
+See `docs/EVALUATION.md` for metrics, safety defaults, and the `/api/evals/run` endpoint.
 
 ## Notes
 
